@@ -1,0 +1,17 @@
+import 'package:flutter/material.dart';
+
+class PinScreen extends StatelessWidget {
+  const PinScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Text(
+          'PIN Screen',
+          style: Theme.of(context).textTheme.headlineMedium,
+        ),
+      ),
+    );
+  }
+}
