@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'screens/pin_screen.dart';
 
+// Paso 1 OK, continuar
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const SecureVaultApp());
