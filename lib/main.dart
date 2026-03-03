@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-// Paso 1 OK, continuar
+
 import 'screens/pin_screen.dart';
 import 'services/crypto_service.dart';
 import 'services/session_service.dart';
@@ -20,13 +20,41 @@ void main() {
   );
 }
 
-class SecureVaultApp extends StatelessWidget {
+class SecureVaultApp extends StatefulWidget {
   final SessionService sessionService;
 
   const SecureVaultApp({
     super.key,
     required this.sessionService,
   });
+
+  @override
+  State<SecureVaultApp> createState() => _SecureVaultAppState();
+}
+
+class _SecureVaultAppState extends State<SecureVaultApp>
+    with WidgetsBindingObserver {
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Si la app pasa a segundo plano o se bloquea
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      widget.sessionService.logout();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +67,7 @@ class SecureVaultApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: PinScreen(sessionService: sessionService),
+      home: PinScreen(sessionService: widget.sessionService),
     );
   }
 }
