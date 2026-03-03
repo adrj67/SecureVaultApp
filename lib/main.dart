@@ -1,15 +1,32 @@
 import 'package:flutter/material.dart';
-import 'screens/pin_screen.dart';
-
 // Paso 1 OK, continuar
+import 'screens/pin_screen.dart';
+import 'services/crypto_service.dart';
+import 'services/session_service.dart';
+import 'services/storage_service.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const SecureVaultApp());
+
+  final cryptoService = CryptoService();
+  final storageService = StorageService();
+  final sessionService = SessionService(
+    cryptoService,
+    storageService,
+  );
+
+  runApp(
+    SecureVaultApp(sessionService: sessionService),
+  );
 }
 
 class SecureVaultApp extends StatelessWidget {
-  const SecureVaultApp({super.key});
+  final SessionService sessionService;
+
+  const SecureVaultApp({
+    super.key,
+    required this.sessionService,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +39,7 @@ class SecureVaultApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const PinScreen(),
+      home: PinScreen(sessionService: sessionService),
     );
   }
 }
