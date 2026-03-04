@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import '../models/vault.dart';
@@ -8,17 +9,18 @@ class SessionService {
   final CryptoService _cryptoService;
   final StorageService _storageService;
 
-  String? _pin; // Vive solo en memoria
+  String? _pin;
   Vault _currentVault = Vault.empty();
+
+  Timer? _inactivityTimer;
+
+  static const Duration _timeoutDuration = Duration(seconds: 10); 
+  // Cambiar a minutos en producción
 
   SessionService(
     this._cryptoService,
     this._storageService,
   );
-
-  // ==========================
-  // GETTERS
-  // ==========================
 
   bool get isLoggedIn => _pin != null;
 
@@ -29,39 +31,26 @@ class SessionService {
     return _currentVault;
   }
 
-  // ==========================
-  // ESTADO INICIAL
-  // ==========================
-
-  /// Indica si ya existe un vault creado en almacenamiento
   Future<bool> vaultExists() async {
     return await _storageService.exists();
   }
 
-  // ==========================
-  // LOGIN
-  // ==========================
-
-  /// Inicia sesión con PIN
-  /// - Si no existe vault → lo crea
-  /// - Si existe → intenta descifrar
   Future<void> login(String pin) async {
     final exists = await _storageService.exists();
 
     if (!exists) {
       await _createNewVault(pin);
-      return;
+    } else {
+      await _unlockExistingVault(pin);
     }
 
-    await _unlockExistingVault(pin);
+    _startInactivityTimer();
   }
 
   Future<void> _createNewVault(String pin) async {
     final emptyVault = Vault.empty();
-
     final jsonString = jsonEncode(emptyVault.toMap());
-    final encrypted =
-        _cryptoService.encryptData(jsonString, pin);
+    final encrypted = _cryptoService.encryptData(jsonString, pin);
 
     await _storageService.saveEncryptedData(encrypted);
 
@@ -86,16 +75,10 @@ class SessionService {
       _pin = pin;
       _currentVault = vault;
     } catch (_) {
-      // Importante: nunca revelar detalles internos
       throw Exception('PIN incorrecto');
     }
   }
 
-  // ==========================
-  // GUARDADO
-  // ==========================
-
-  /// Guarda cambios en el vault (re-cifra completo)
   Future<void> saveVault(Vault vault) async {
     if (!isLoggedIn || _pin == null) {
       throw Exception('No hay sesión activa');
@@ -108,17 +91,31 @@ class SessionService {
     await _storageService.saveEncryptedData(encrypted);
 
     _currentVault = vault;
+    _resetInactivityTimer();
   }
 
-  // ==========================
-  // LOGOUT
-  // ==========================
+  void _startInactivityTimer() {
+    _inactivityTimer?.cancel();
+    _inactivityTimer = Timer(_timeoutDuration, () {
+      logout();
+    });
+  }
 
-  /// Cierra sesión y limpia completamente la memoria sensible
+  void _resetInactivityTimer() {
+    if (isLoggedIn) {
+      _startInactivityTimer();
+    }
+  }
+
+  void registerUserActivity() {
+    _resetInactivityTimer();
+  }
+
   void logout() {
-    _pin = null;
+    _inactivityTimer?.cancel();
+    _inactivityTimer = null;
 
-    // Limpieza defensiva
+    _pin = null;
     _currentVault = Vault.empty();
   }
 }

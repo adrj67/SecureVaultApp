@@ -49,12 +49,18 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Vault - Home Screen'),
-      ),
-      body: const Center(
-        child: Text('Sesión iniciada correctamente'),
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: (){
+        widget.sessionService.registerUserActivity();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Vault - Home Screen'),
+        ),
+        body: const Center(
+          child: Text('Sesión iniciada correctamente'),
+        ),
       ),
     );
   }
