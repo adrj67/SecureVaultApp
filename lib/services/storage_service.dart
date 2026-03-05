@@ -1,30 +1,37 @@
 import 'dart:io';
-
 import 'package:path_provider/path_provider.dart';
 
 class StorageService {
   static const String _fileName = 'vault.json';
 
-  /// Obtiene el archivo del vault
+  /// Obtiene la ruta del archivo del vault
   Future<File> _getVaultFile() async {
     final directory = await getApplicationDocumentsDirectory();
     final filePath = '${directory.path}/$_fileName';
     return File(filePath);
   }
 
-  /// Verifica si el archivo existe
+  /// Verifica si el vault existe
   Future<bool> exists() async {
     final file = await _getVaultFile();
-    return file.exists();
+    return await file.exists();
   }
 
-  /// Guarda contenido cifrado en el archivo
+  /// Guarda datos cifrados en el vault
   Future<void> saveEncryptedData(String encryptedData) async {
     final file = await _getVaultFile();
-    await file.writeAsString(encryptedData, flush: true);
+
+    if (!await file.exists()) {
+      await file.create(recursive: true);
+    }
+
+    await file.writeAsString(
+      encryptedData,
+      flush: true,
+    );
   }
 
-  /// Lee contenido cifrado del archivo
+  /// Lee datos cifrados del vault
   Future<String?> readEncryptedData() async {
     final file = await _getVaultFile();
 
@@ -32,6 +39,21 @@ class StorageService {
       return null;
     }
 
-    return file.readAsString();
+    final content = await file.readAsString();
+
+    if (content.isEmpty) {
+      return null;
+    }
+
+    return content;
+  }
+
+  /// Borra completamente el vault
+  Future<void> deleteVault() async {
+    final file = await _getVaultFile();
+
+    if (await file.exists()) {
+      await file.delete();
+    }
   }
 }

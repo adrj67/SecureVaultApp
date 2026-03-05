@@ -5,7 +5,7 @@ import 'services/crypto_service.dart';
 import 'services/session_service.dart';
 import 'services/storage_service.dart';
 
-// Paso 10 OK, continuar
+// Paso 11 OK, continuar
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();

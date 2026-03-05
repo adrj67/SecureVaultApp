@@ -4,6 +4,8 @@ class Credential {
   final String username;
   final String password;
   final String notes;
+  final DateTime createdAt;
+  final DateTime updatedAt;
 
   const Credential({
     required this.id,
@@ -11,9 +13,10 @@ class Credential {
     required this.username,
     required this.password,
     required this.notes,
+    required this.createdAt,
+    required this.updatedAt,
   });
 
-  /// Convierte la entidad a Map para serialización JSON
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -21,10 +24,11 @@ class Credential {
       'username': username,
       'password': password,
       'notes': notes,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
     };
   }
 
-  /// Crea una entidad desde un Map (deserialización JSON)
   factory Credential.fromMap(Map<String, dynamic> map) {
     return Credential(
       id: map['id'] ?? '',
@@ -32,16 +36,19 @@ class Credential {
       username: map['username'] ?? '',
       password: map['password'] ?? '',
       notes: map['notes'] ?? '',
+      createdAt: DateTime.parse(map['createdAt']),
+      updatedAt: DateTime.parse(map['updatedAt']),
     );
   }
 
-  /// Permite crear una copia modificada sin mutar el objeto original
   Credential copyWith({
     String? id,
     String? application,
     String? username,
     String? password,
     String? notes,
+    DateTime? createdAt,
+    DateTime? updatedAt,
   }) {
     return Credential(
       id: id ?? this.id,
@@ -49,6 +56,8 @@ class Credential {
       username: username ?? this.username,
       password: password ?? this.password,
       notes: notes ?? this.notes,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 }
