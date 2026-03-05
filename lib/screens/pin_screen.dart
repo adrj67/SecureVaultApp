@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/session_service.dart';
+import '../services/biometric_service.dart';
 import 'home_screen.dart';
 
 class PinScreen extends StatefulWidget {
@@ -17,8 +18,42 @@ class PinScreen extends StatefulWidget {
 
 class _PinScreenState extends State<PinScreen> {
   final TextEditingController _pinController = TextEditingController();
+  final BiometricService _biometricService = BiometricService();
+
   bool _isLoading = false;
   String? _error;
+  bool _biometricTried = false;
+
+  @override
+  void initState() {
+    super.initState();
+    //_tryBiometricLogin();
+  }
+
+  Future<void> _handleBiometricLogin() async {
+    if (_biometricTried) return;
+    _biometricTried = true;
+
+    final available = await _biometricService.isBiometricAvailable();
+    if (!available) return;
+
+    final authenticated = await _biometricService.authenticate();
+    if (!mounted) return;
+
+    if (authenticated) {
+      await widget.sessionService.loginWithBiometric();
+      if (!mounted) return;
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => HomeScreen(
+            sessionService: widget.sessionService,
+          ),
+        ),
+      );
+    }
+  }
 
   Future<void> _handleLogin() async {
     final pin = _pinController.text.trim();
@@ -48,7 +83,7 @@ class _PinScreenState extends State<PinScreen> {
           ),
         ),
       );
-    } catch (e) {
+    } catch (_) {
       setState(() {
         _error = 'PIN incorrecto';
       });
@@ -81,6 +116,7 @@ class _PinScreenState extends State<PinScreen> {
                 style: Theme.of(context).textTheme.headlineMedium,
               ),
               const SizedBox(height: 32),
+
               TextField(
                 controller: _pinController,
                 obscureText: true,
@@ -90,17 +126,31 @@ class _PinScreenState extends State<PinScreen> {
                   errorText: _error,
                   border: const OutlineInputBorder(),
                 ),
+                onSubmitted: (_) => _handleLogin(),
               ),
+
               const SizedBox(height: 24),
+
               SizedBox(
                 width: double.infinity,
                 height: 48,
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _handleLogin,
                   child: _isLoading
-                      ? const CircularProgressIndicator()
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
                       : const Text('Ingresar'),
                 ),
+              ),
+
+              const SizedBox(height: 16),
+
+              TextButton(
+                onPressed: _handleBiometricLogin,
+                child: const Text('Usar biometría'),
               ),
             ],
           ),

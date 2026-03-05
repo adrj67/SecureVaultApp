@@ -18,6 +18,8 @@ class SessionService {
   Vault _currentVault = Vault.empty();
 
   Timer? _inactivityTimer;
+  //bool _isLoggedIn = false;
+  //DateTime? _lastActivity;
 
   static const Duration _timeoutDuration =
       Duration(seconds: 10); // Cambiar en producción
@@ -49,6 +51,18 @@ class SessionService {
   // ==========================
   // LOGIN
   // ==========================
+
+  Future<void> loginWithBiometric() async {
+    final savedPin = await getSavedPin();
+
+    if (savedPin == null) {
+      throw Exception('No hay PIN guardado para biometría');
+    }
+
+    await _unlockExistingVault(savedPin);
+
+    _startInactivityTimer();
+  }
 
   Future<void> login(String pin) async {
     final exists = await _storageService.exists();
