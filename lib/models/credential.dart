@@ -10,9 +10,9 @@ class Credential {
   const Credential({
     required this.id,
     required this.application,
-    required this.username,
+    this.username = '',
     required this.password,
-    required this.notes,
+    this.notes = '',
     required this.createdAt,
     required this.updatedAt,
   });
@@ -36,8 +36,12 @@ class Credential {
       username: map['username'] ?? '',
       password: map['password'] ?? '',
       notes: map['notes'] ?? '',
-      createdAt: DateTime.parse(map['createdAt']),
-      updatedAt: DateTime.parse(map['updatedAt']),
+      createdAt: map['createdAt'] != null
+        ? DateTime.parse(map['createdAt'])
+        : DateTime.now(),
+      updatedAt: map['updatedAt'] != null
+        ? DateTime.parse(map['updatedAt'])
+        : DateTime.now(),
     );
   }
 
@@ -59,5 +63,10 @@ class Credential {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
+  }
+
+  @override
+  String toString() {
+    return 'Credential(application: $application, username: $username)';
   }
 }
