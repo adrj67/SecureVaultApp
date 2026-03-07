@@ -7,6 +7,10 @@ import '../models/credential.dart';
 import 'pin_screen.dart';
 import 'add_edit_screen.dart';
 
+import '../widgets/credential_tile.dart';
+import '../widgets/confirm_dialog.dart';
+import '../utils/constants.dart';
+
 class HomeScreen extends StatefulWidget {
   final SessionService sessionService;
 
@@ -234,7 +238,7 @@ class _HomeScreenState extends State<HomeScreen>
                             _visiblePasswords[cred.id] ??
                                 false;
 
-                        return  Dismissible(
+                        return Dismissible(
                           key: ValueKey(cred.id),
 
                           direction: DismissDirection.endToStart,
@@ -253,70 +257,28 @@ class _HomeScreenState extends State<HomeScreen>
                               color: Colors.white,
                             ),
                           ),
-                          
-                        child: Card(
-                          margin: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
+
+                        child: CredentialTile(
+                          credential: cred,
+                          passwordVisible: visible,
+
+                          onTogglePassword: () => _togglePassword(cred.id),
+
+                          onEdit: () async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => AddEditScreen(
+                                  repository: _credentialRepository,
+                                  credential: cred,
+                                ),
+                              ),
+                            );
+
+                            _loadCredentials();
+                          },
                           ),
-                          child: ListTile(
-                            onTap: () async {
-                              await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => AddEditScreen(
-                                    repository: _credentialRepository,
-                                    credential: cred,
-                                  ),
-                                ),
-                              );
-                              _loadCredentials();
-                            },
-                            title: Text(cred.application),
-
-                            subtitle: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
-                              children: [
-
-                                if (cred.username.isNotEmpty)
-                                  Text(cred.username),
-
-                                const SizedBox(height: 4),
-
-                                Text(
-                                  visible
-                                      ? cred.password
-                                      : '••••••••••',
-                                ),
-                              ],
-                            ),
-
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-
-                                IconButton(
-                                  icon: Icon(
-                                    visible
-                                        ? Icons.visibility_off
-                                        : Icons.visibility,
-                                  ),
-                                  onPressed: () =>
-                                      _togglePassword(
-                                          cred.id),
-                                ),
-
-                                IconButton(
-                                  icon: const Icon(Icons.copy),
-                                  onPressed: () =>
-                                      _copyPassword(
-                                          cred.password),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ));
+                        );
                       },
                     ),
             ),
