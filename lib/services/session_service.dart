@@ -22,7 +22,7 @@ class SessionService {
   //DateTime? _lastActivity;
 
   static const Duration _timeoutDuration =
-      Duration(seconds: 10); // Cambiar en producción
+      Duration(seconds: 60); // Cambiar en producción
 
   static const String _pinKey = 'vault_pin';
 
@@ -53,7 +53,7 @@ class SessionService {
   // ==========================
 
   Future<void> loginWithBiometric() async {
-    final savedPin = await getSavedPin();
+    final savedPin = await _secureStorage.read(key: _pinKey);
 
     if (savedPin == null) {
       throw Exception('No hay PIN guardado para biometría');

@@ -5,6 +5,7 @@ import '../services/session_service.dart';
 import '../repositories/credential_repository.dart';
 import '../models/credential.dart';
 import 'pin_screen.dart';
+import 'add_edit_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final SessionService sessionService;
@@ -76,8 +77,8 @@ class _HomeScreenState extends State<HomeScreen>
   // CARGAR CREDENCIALES
   // ==========================
 
-  Future<void> _loadCredentials() async {
-    final list = await _credentialRepository.getAll();
+  void _loadCredentials() {
+    final list = _credentialRepository.getAll();
 
     setState(() {
       _credentials = list;
@@ -111,7 +112,7 @@ class _HomeScreenState extends State<HomeScreen>
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Contraseña copiada al portapapeles'),
+        content: Text('Contraseña copiada'),
       ),
     );
   }
@@ -125,6 +126,58 @@ class _HomeScreenState extends State<HomeScreen>
       _visiblePasswords[id] =
           !(_visiblePasswords[id] ?? false);
     });
+  }
+
+  // ==========================
+  // ABRIR ADD CREDENTIAL
+  // ==========================
+
+  Future<void> _openAddCredential() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AddEditScreen(
+          repository: _credentialRepository,
+        ),
+      ),
+    );
+
+    _loadCredentials();
+  }
+  
+  // ==========================
+  // BORRAR CREDENTIAL
+  // ==========================
+
+  Future<void> _deleteCredential(Credential credential) async {
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) {
+        return AlertDialog(
+          title: const Text('Eliminar credencial'),
+          content: Text(
+            '¿Seguro que deseas eliminar "${credential.application}"?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Eliminar'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm != true) return;
+
+    await _credentialRepository.deleteCredential(credential.id);
+
+    _loadCredentials();
   }
 
   // ==========================
@@ -144,19 +197,14 @@ class _HomeScreenState extends State<HomeScreen>
         ),
 
         floatingActionButton: FloatingActionButton(
-          onPressed: () {
-            // Paso siguiente: crear credencial
-          },
+          onPressed: _openAddCredential,
           child: const Icon(Icons.add),
         ),
 
         body: Column(
           children: [
 
-            // ==========================
             // BUSCADOR
-            // ==========================
-
             Padding(
               padding: const EdgeInsets.all(12),
               child: TextField(
@@ -169,10 +217,7 @@ class _HomeScreenState extends State<HomeScreen>
               ),
             ),
 
-            // ==========================
             // LISTA
-            // ==========================
-
             Expanded(
               child: _filteredCredentials.isEmpty
                   ? const Center(
@@ -181,6 +226,7 @@ class _HomeScreenState extends State<HomeScreen>
                   : ListView.builder(
                       itemCount: _filteredCredentials.length,
                       itemBuilder: (context, index) {
+
                         final cred =
                             _filteredCredentials[index];
 
@@ -188,22 +234,53 @@ class _HomeScreenState extends State<HomeScreen>
                             _visiblePasswords[cred.id] ??
                                 false;
 
-                        return Card(
+                        return  Dismissible(
+                          key: ValueKey(cred.id),
+
+                          direction: DismissDirection.endToStart,
+
+                          confirmDismiss: (_) async {
+                            await _deleteCredential(cred);
+                            return false;
+                          },
+
+                          background: Container(
+                            color: Colors.red,
+                            alignment: Alignment.centerRight,
+                            padding: const EdgeInsets.only(right: 20),
+                            child: const Icon(
+                              Icons.delete,
+                              color: Colors.white,
+                            ),
+                          ),
+                          
+                        child: Card(
                           margin: const EdgeInsets.symmetric(
                             horizontal: 12,
                             vertical: 6,
                           ),
                           child: ListTile(
+                            onTap: () async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => AddEditScreen(
+                                    repository: _credentialRepository,
+                                    credential: cred,
+                                  ),
+                                ),
+                              );
+                              _loadCredentials();
+                            },
                             title: Text(cred.application),
+
                             subtitle: Column(
                               crossAxisAlignment:
                                   CrossAxisAlignment.start,
                               children: [
 
                                 if (cred.username.isNotEmpty)
-                                  Text(
-                                    'Usuario: ${cred.username}',
-                                  ),
+                                  Text(cred.username),
 
                                 const SizedBox(height: 4),
 
@@ -231,8 +308,7 @@ class _HomeScreenState extends State<HomeScreen>
                                 ),
 
                                 IconButton(
-                                  icon: const Icon(
-                                      Icons.copy),
+                                  icon: const Icon(Icons.copy),
                                   onPressed: () =>
                                       _copyPassword(
                                           cred.password),
@@ -240,7 +316,7 @@ class _HomeScreenState extends State<HomeScreen>
                               ],
                             ),
                           ),
-                        );
+                        ));
                       },
                     ),
             ),
