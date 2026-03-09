@@ -40,6 +40,16 @@ class CredentialTile extends StatelessWidget {
         vertical: 6,
       ),
       child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: Colors.grey.shade200,
+          child: Image.network(
+            'https://www.google.com/s2/favicons?domain=${credential.application}.com',
+            width: 20,
+            height: 20,
+            errorBuilder: (_, __, ___) =>
+                const Icon(Icons.lock_outline, color: Colors.green, ),
+          ),
+        ),
 
         onTap: onEdit,
 
@@ -96,7 +106,7 @@ class CredentialTile extends StatelessWidget {
             ),
           ],
         ),
-      ),
+      )
     );
   }
 }

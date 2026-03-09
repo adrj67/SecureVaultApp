@@ -84,6 +84,12 @@ class _HomeScreenState extends State<HomeScreen>
   void _loadCredentials() {
     final list = _credentialRepository.getAll();
 
+    list.sort(
+      (a, b) => a.application.toLowerCase().compareTo(
+        b.application.toLowerCase(),
+      )
+    );
+
     setState(() {
       _credentials = list;
       _filteredCredentials = list;
