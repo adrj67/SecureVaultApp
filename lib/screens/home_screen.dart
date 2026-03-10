@@ -6,10 +6,11 @@ import '../repositories/credential_repository.dart';
 import '../models/credential.dart';
 import 'pin_screen.dart';
 import 'add_edit_screen.dart';
+import 'detail_screen.dart';
 
 import '../widgets/credential_tile.dart';
-import '../widgets/confirm_dialog.dart';
-import '../utils/constants.dart';
+//import '../widgets/confirm_dialog.dart';
+//import '../utils/constants.dart';
 
 class HomeScreen extends StatefulWidget {
   final SessionService sessionService;
@@ -114,7 +115,7 @@ class _HomeScreenState extends State<HomeScreen>
   // ==========================
   // COPIAR CONTRASEÑA
   // ==========================
-
+/*
   Future<void> _copyPassword(String password) async {
     await Clipboard.setData(ClipboardData(text: password));
 
@@ -126,7 +127,7 @@ class _HomeScreenState extends State<HomeScreen>
       ),
     );
   }
-
+*/
   // ==========================
   // MOSTRAR / OCULTAR
   // ==========================
@@ -154,6 +155,28 @@ class _HomeScreenState extends State<HomeScreen>
 
     _loadCredentials();
   }
+
+  // ==========================
+  // ABRIR DETAIL SCREEN
+  // ==========================
+/*
+  Future<void> _openDetailScreen() async {
+
+    final cred = _filteredCredentials[index];
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => DetailScreen(
+          credential: cred,
+          repository: _credentialRepository,
+        ),
+      ),
+    );
+
+    _loadCredentials();
+  }
+  */
   
   // ==========================
   // BORRAR CREDENTIAL
@@ -206,7 +229,7 @@ class _HomeScreenState extends State<HomeScreen>
           title: const Text('Secure Vault'),
         ),
 
-        floatingActionButton: FloatingActionButton(
+       floatingActionButton: FloatingActionButton(
           onPressed: _openAddCredential,
           child: const Icon(Icons.add),
         ),
@@ -274,9 +297,9 @@ class _HomeScreenState extends State<HomeScreen>
                             await Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => AddEditScreen(
-                                  repository: _credentialRepository,
+                                builder: (_) => DetailScreen ( // builder: (_) => AddEditScreen(
                                   credential: cred,
+                                  repository: _credentialRepository,
                                 ),
                               ),
                             );
