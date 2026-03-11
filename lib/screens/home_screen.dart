@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:secure_vault/utils/constants.dart';
 
 import '../services/session_service.dart';
 import '../repositories/credential_repository.dart';
@@ -225,13 +226,16 @@ class _HomeScreenState extends State<HomeScreen>
         widget.sessionService.registerUserActivity();
       },
       child: Scaffold(
+        backgroundColor: AppColors.primary, //const Color(0xFFF4F6F8),
         appBar: AppBar(
-          title: const Text('Secure Vault'),
+          title: const Text('Listado de Apps'),
+          centerTitle: true,
         ),
 
        floatingActionButton: FloatingActionButton(
           onPressed: _openAddCredential,
-          child: const Icon(Icons.add),
+          backgroundColor: Colors.deepOrange,
+          child: const Icon(Icons.add, color: AppColors.pinEmpty,),
         ),
 
         body: Column(
@@ -239,14 +243,36 @@ class _HomeScreenState extends State<HomeScreen>
 
             // BUSCADOR
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
               child: TextField(
                 controller: _searchController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: 'Buscar aplicación o usuario...',
-                  prefixIcon: Icon(Icons.search),
-                  border: OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _searchController.clear();
+                            _filterCredentials();
+                            setState(() {});
+                          },
+                        )
+                      : null,
+
+                  filled: true,
+                  fillColor: Colors.white,
+
+                  contentPadding: const EdgeInsets.symmetric(
+                    vertical: 14,
+                  ),
+
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
+                onChanged: (_) => setState(() {}),
               ),
             ),
 

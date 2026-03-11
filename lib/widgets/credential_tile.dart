@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:secure_vault/utils/constants.dart';
-
 import '../models/credential.dart';
 
 class CredentialTile extends StatelessWidget {
@@ -25,20 +23,33 @@ class CredentialTile extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.symmetric(
         horizontal: 12,
-        vertical: 6,
+        vertical: 8,
+      ),
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
       ),
       child: ListTile(
 
         onTap: onEdit,
 
         leading: CircleAvatar(
-          backgroundColor: Colors.grey.shade200,
-          child: Image.network(
-            'https://www.google.com/s2/favicons?domain=${credential.application}.com',
-            width: 20,
-            height: 20,
-            errorBuilder: (_, __, ___) =>
-                const Icon(Icons.lock_outline, color: AppColors.primary,),
+          radius: 20,
+          backgroundColor: Colors.grey.shade100,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Image.network(
+              'https://logo.clearbit.com/${credential.application}.com',
+              width: 24,
+              height: 24,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) {
+                return const Icon(
+                  Icons.lock_outline,
+                  color: Colors.green,
+                );
+              },
+            ),
           ),
         ),
 
