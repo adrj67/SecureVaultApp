@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:secure_vault/screens/pin_screen.dart';
+import 'package:secure_vault/services/session_service.dart';
+import 'package:secure_vault/utils/constants.dart';
 import 'dart:math';
 
 import '../models/credential.dart';
@@ -8,10 +11,12 @@ import '../repositories/credential_repository.dart';
 class AddEditScreen extends StatefulWidget {
   final CredentialRepository repository;
   final Credential? credential;
+  final SessionService sessionService;
 
   const AddEditScreen({
     super.key,
     required this.repository,
+    required this.sessionService,
     this.credential,
   });
 
@@ -19,7 +24,8 @@ class AddEditScreen extends StatefulWidget {
   State<AddEditScreen> createState() => _AddEditScreenState();
 }
 
-class _AddEditScreenState extends State<AddEditScreen> {
+class _AddEditScreenState extends State<AddEditScreen> 
+  with WidgetsBindingObserver {
 
   final _formKey = GlobalKey<FormState>();
 
@@ -37,6 +43,7 @@ class _AddEditScreenState extends State<AddEditScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
 
     if (isEditing) {
       final c = widget.credential!;
@@ -50,6 +57,7 @@ class _AddEditScreenState extends State<AddEditScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _applicationController.dispose();
     _usernameController.dispose();
     _passwordController.dispose();
@@ -57,9 +65,25 @@ class _AddEditScreenState extends State<AddEditScreen> {
     super.dispose();
   }
 
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+
+      // 👇 Si está abierta esta pantalla, cerrarla
+      if (mounted && Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+    }
+  }
+  
+
+  /// Generador de claves
   void _generatePassword() {
     const chars =
-        'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#\$%^&*()_+';
+        'abcdefghijklmnñopqrstuvwxyzABCDEFGHIJKLMNÑOPQRSTUVWXYZ0123456789!@#\$%^&*()_+';
 
     final rand = Random.secure();
     final password =
@@ -70,6 +94,7 @@ class _AddEditScreenState extends State<AddEditScreen> {
     });
   }
 
+  ///Copiar contraseña
   void _copyPassword() {
     Clipboard.setData(
       ClipboardData(text: _passwordController.text),
@@ -82,7 +107,9 @@ class _AddEditScreenState extends State<AddEditScreen> {
     );
   }
 
+  /// Guardar Credencial
   Future<void> _saveCredential() async {
+
     final application = _applicationController.text.trim();
     final username = _usernameController.text.trim();
     final password = _passwordController.text.trim();
@@ -97,29 +124,47 @@ class _AddEditScreenState extends State<AddEditScreen> {
 
     final isEditing = widget.credential != null;
 
-    if (isEditing) {
-      final updated = widget.credential!.copyWith(
-        application: application,
-        username: username,
-        password: password,
-        notes: notes,
-      );
+    try {
 
-      print("Intentando guardar credencial");
-      await widget.repository.updateCredential(updated);
-    } else {
-      await widget.repository.addCredential(
-        application: application,
-        username: username,
-        password: password,
-        notes: notes,
-      );
-      print("Credencial guardada");
+      if (isEditing) {
+
+        final updated = widget.credential!.copyWith(
+          application: application,
+          username: username,
+          password: password,
+          notes: notes,
+        );
+
+        await widget.repository.updateCredential(updated);
+
+      } else {
+
+        await widget.repository.addCredential(
+          application: application,
+          username: username,
+          password: password,
+          notes: notes,
+        );
+      }
+
+      // 🔥 CLAVE: validar estado antes de navegar
+      if (!mounted || !widget.sessionService.isLoggedIn) return;
+
+      Navigator.of(context).maybePop(); // 👈 evita crash
+
+    } catch (e) {
+
+      // 🔥 Si la sesión murió, NO navegues desde acá
+      if (!mounted) return;
+
+      if (!widget.sessionService.isLoggedIn) {
+        return; // 👈 la app ya se va a redirigir sola al PIN
+      }
+
+      setState(() {
+        _error = "Error al guardar";
+      });
     }
-    
-    if (!mounted) return;
-
-    Navigator.pop(context);
   }
 
   @override
@@ -129,9 +174,12 @@ class _AddEditScreenState extends State<AddEditScreen> {
         title: Text(
           isEditing ? 'Editar credencial' : 'Nueva credencial',
         ),
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.pinEmpty,
         actions: [
           IconButton(
             icon: const Icon(Icons.save),
+            //color: AppColors.pinEmpty,
             onPressed: _saveCredential,
           )
         ],
@@ -178,11 +226,13 @@ class _AddEditScreenState extends State<AddEditScreen> {
 
                       IconButton(
                         icon: const Icon(Icons.copy),
+                        color: AppColors.primaryClaro,
                         onPressed: _copyPassword,
                       ),
 
                       IconButton(
                         icon: const Icon(Icons.password),
+                        color: AppColors.primaryClaro,
                         onPressed: _generatePassword,
                       ),
 
@@ -192,6 +242,7 @@ class _AddEditScreenState extends State<AddEditScreen> {
                               ? Icons.visibility
                               : Icons.visibility_off,
                         ),
+                        color: AppColors.primaryClaro,
                         onPressed: () {
                           setState(() {
                             _obscurePassword = !_obscurePassword;
@@ -225,6 +276,10 @@ class _AddEditScreenState extends State<AddEditScreen> {
               ),
 
               ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary, // Color de fondo
+                  foregroundColor: AppColors.pinEmpty, // Color del texto/icono
+                ),
                 onPressed: _saveCredential,
                 child: const Text('Guardar'),
               ),

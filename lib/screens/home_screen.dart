@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+//import 'package:flutter/services.dart';
 import 'package:secure_vault/utils/constants.dart';
 
 import '../services/session_service.dart';
@@ -62,12 +62,16 @@ class _HomeScreenState extends State<HomeScreen>
   // CICLO DE VIDA APP
   // ==========================
 
-  @override
+ @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+
     if (state == AppLifecycleState.resumed) {
+
       if (!widget.sessionService.isLoggedIn) {
-        Navigator.pushAndRemoveUntil(
-          context,
+
+        if (!mounted) return;
+
+        Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
             builder: (_) => PinScreen(
               sessionService: widget.sessionService,
@@ -75,27 +79,35 @@ class _HomeScreenState extends State<HomeScreen>
           ),
           (route) => false,
         );
+
       }
     }
   }
-
+  
   // ==========================
   // CARGAR CREDENCIALES
   // ==========================
 
-  void _loadCredentials() {
-    final list = _credentialRepository.getAll();
+  Future <void> _loadCredentials() async {
+    try{
+      final list = await _credentialRepository.getAll();
 
-    list.sort(
+      list.sort(
       (a, b) => a.application.toLowerCase().compareTo(
         b.application.toLowerCase(),
-      )
-    );
+        )
+      );
 
-    setState(() {
-      _credentials = list;
-      _filteredCredentials = list;
-    });
+      if (!mounted) return;
+
+      setState(() {
+        _credentials = list;
+        _filteredCredentials = list;
+      });
+    } catch(e) {
+
+    }
+
   }
 
   // ==========================
@@ -145,11 +157,13 @@ class _HomeScreenState extends State<HomeScreen>
   // ==========================
 
   Future<void> _openAddCredential() async {
+    widget.sessionService.registerUserActivity();
     await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => AddEditScreen(
           repository: _credentialRepository,
+          sessionService: widget.sessionService,
         ),
       ),
     );
@@ -233,9 +247,12 @@ class _HomeScreenState extends State<HomeScreen>
         ),
 
        floatingActionButton: FloatingActionButton(
+        
           onPressed: _openAddCredential,
-          backgroundColor: Colors.deepOrange,
-          child: const Icon(Icons.add, color: AppColors.pinEmpty,),
+          elevation: 6,
+          backgroundColor: AppColors.resalta,
+          foregroundColor: AppColors.primary,
+          child: const Icon(Icons.add),
         ),
 
         body: Column(
@@ -283,6 +300,7 @@ class _HomeScreenState extends State<HomeScreen>
                       child: Text('No hay credenciales'),
                     )
                   : ListView.builder(
+                      padding: const EdgeInsets.only(bottom: 80),
                       itemCount: _filteredCredentials.length,
                       itemBuilder: (context, index) {
 
@@ -320,12 +338,14 @@ class _HomeScreenState extends State<HomeScreen>
                           onTogglePassword: () => _togglePassword(cred.id),
 
                           onEdit: () async {
+                            //widget.sessionService.registerUserActivity();
                             await Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (_) => DetailScreen ( // builder: (_) => AddEditScreen(
                                   credential: cred,
                                   repository: _credentialRepository,
+                                  sessionService: widget.sessionService,
                                 ),
                               ),
                             );

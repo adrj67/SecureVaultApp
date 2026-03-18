@@ -1,18 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:secure_vault/services/session_service.dart';
+import 'package:secure_vault/utils/constants.dart';
 
 import '../models/credential.dart';
 import '../repositories/credential_repository.dart';
 import 'add_edit_screen.dart';
+//import '../services/session_service.dart';
 
 class DetailScreen extends StatefulWidget {
   final Credential credential;
   final CredentialRepository repository;
+  final SessionService sessionService;
 
   const DetailScreen({
     super.key,
     required this.credential,
     required this.repository,
+    required this.sessionService,
   });
 
   @override
@@ -67,12 +72,13 @@ class _DetailScreenState extends State<DetailScreen> {
   }
 
   Future<void> _editCredential() async {
-
+    //widget.sessionService.registerUserActivity();
     await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => AddEditScreen(
           repository: widget.repository,
+          sessionService: widget.sessionService,
           credential: widget.credential,
         ),
       ),
@@ -117,6 +123,8 @@ class _DetailScreenState extends State<DetailScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(cred.application),
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.pinEmpty,
         actions: [
 
           IconButton(
@@ -132,6 +140,14 @@ class _DetailScreenState extends State<DetailScreen> {
         ],
       ),
 
+      floatingActionButton: FloatingActionButton(
+          onPressed: _editCredential,
+          elevation: 6,
+          backgroundColor: AppColors.resalta,
+          foregroundColor: AppColors.primary,
+          child: const Icon(Icons.edit),
+        ),
+
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -141,11 +157,27 @@ class _DetailScreenState extends State<DetailScreen> {
             Center(
               child: CircleAvatar(
                 radius: 36,
-                child: Text(
-                  cred.application.substring(0, 1).toUpperCase(),
-                  style: const TextStyle(fontSize: 24),
+                backgroundColor: Colors.grey.shade200,
+                child: ClipOval(
+                  child: Image.network(
+                    'https://www.google.com/s2/favicons?domain=${cred.application}.com&sz=128',
+                    width: 48,
+                    height: 48,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) {
+                      return Text(
+                        cred.application.isNotEmpty
+                          ? cred.application.substring(0, 1).toUpperCase()
+                          : '?',
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      );
+                    },
+                  ),
                 ),
-              ),
+              )
             ),
 
             const SizedBox(height: 30),
@@ -161,6 +193,7 @@ class _DetailScreenState extends State<DetailScreen> {
 
                 IconButton(
                   icon: const Icon(Icons.copy),
+                  color: AppColors.primaryClaro,
                   onPressed: cred.username.isEmpty
                       ? null
                       : () => _copy(
@@ -190,6 +223,7 @@ class _DetailScreenState extends State<DetailScreen> {
                         ? Icons.visibility_off
                         : Icons.visibility,
                   ),
+                  color: AppColors.primaryClaro,
                   onPressed: () {
                     setState(() {
                       _passwordVisible = !_passwordVisible;
@@ -199,6 +233,7 @@ class _DetailScreenState extends State<DetailScreen> {
 
                 IconButton(
                   icon: const Icon(Icons.copy),
+                  color: AppColors.primaryClaro,
                   onPressed: () => _copy(
                     cred.password,
                     "Contraseña copiada",

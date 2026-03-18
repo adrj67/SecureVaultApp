@@ -1,13 +1,14 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../models/vault.dart';
 import 'crypto_service.dart';
 import 'storage_service.dart';
 
-class SessionService {
+class SessionService extends ChangeNotifier {
   final CryptoService _cryptoService;
   final StorageService _storageService;
 
@@ -21,8 +22,12 @@ class SessionService {
   //bool _isLoggedIn = false;
   //DateTime? _lastActivity;
 
+  //bool _isLocked = false;
+
+  //bool get isLocked => _isLocked;
+
   static const Duration _timeoutDuration =
-      Duration(seconds: 60); // Cambiar en producción
+      Duration(minutes: 10); // Cambiar en producción
 
   static const String _pinKey = 'vault_pin';
 
@@ -61,6 +66,8 @@ class SessionService {
 
     await _unlockExistingVault(savedPin);
 
+    //_isLocked = false;
+
     _startInactivityTimer();
   }
 
@@ -76,7 +83,11 @@ class SessionService {
     // Guardamos PIN en almacenamiento seguro para biometría
     await _secureStorage.write(key: _pinKey, value: pin);
 
+    //_isLocked = false;
+    notifyListeners();
+
     _startInactivityTimer();
+
   }
 
   Future<void> _createNewVault(String pin) async {
@@ -139,6 +150,7 @@ class SessionService {
     await _storageService.saveEncryptedData(encrypted);
 
     _currentVault = vault;
+    notifyListeners();
     _resetInactivityTimer();
   }
 
@@ -162,15 +174,32 @@ class SessionService {
     _resetInactivityTimer();
   }
 
+  void lock() {
+    print("SESSION BLOQUEADA (lock)");
+
+    _inactivityTimer?.cancel();
+    _inactivityTimer = null;
+
+    // ESTO ES LO IMPORTANTE
+    _pin = null;
+
+    notifyListeners();
+  }
   // ==========================
   // LOGOUT
   // ==========================
 
   void logout() {
+    print("SESSION LOGOUT");
+
     _inactivityTimer?.cancel();
     _inactivityTimer = null;
 
     _pin = null;
     _currentVault = Vault.empty();
+
+    notifyListeners(); // FALTABA
   }
+
+
 }

@@ -39,7 +39,7 @@ class CredentialTile extends StatelessWidget {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(20),
             child: Image.network(
-              'https://logo.clearbit.com/${credential.application}.com',
+              'https://www.google.com/s2/favicons?domain=${credential.application}.com',
               width: 24,
               height: 24,
               fit: BoxFit.contain,
