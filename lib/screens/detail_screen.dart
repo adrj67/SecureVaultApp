@@ -118,137 +118,122 @@ class _DetailScreenState extends State<DetailScreen> {
   @override
   Widget build(BuildContext context) {
 
-    final cred = widget.credential;
+        final cred = widget.credential;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(cred.application),
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.pinEmpty,
-        actions: [
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(cred.application),
+            backgroundColor: AppColors.primary,
+            foregroundColor: AppColors.pinEmpty,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.edit),
+                onPressed: _editCredential,
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete),
+                onPressed: _deleteCredential,
+              ),
+            ],
+          ),
 
-          IconButton(
-            icon: const Icon(Icons.edit),
+          floatingActionButton: FloatingActionButton(
             onPressed: _editCredential,
+            elevation: 6,
+            backgroundColor: AppColors.resalta,
+            foregroundColor: AppColors.primary,
+            child: const Icon(Icons.edit),
           ),
 
-          IconButton(
-            icon: const Icon(Icons.delete),
-            onPressed: _deleteCredential,
+          body: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: CircleAvatar(
+                    radius: 36,
+                    backgroundColor: Colors.grey.shade200,
+                    child: ClipOval(
+                      child: Image.network(
+                        'https://www.google.com/s2/favicons?domain=${cred.application}.com&sz=128',
+                        width: 48,
+                        height: 48,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) {
+                          return Text(
+                            cred.application.isNotEmpty
+                                ? cred.application.substring(0, 1).toUpperCase()
+                                : '?',
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 30),
+
+                _buildField("Aplicación", cred.application),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildField("Usuario", cred.username),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.copy),
+                      color: AppColors.primaryClaro,
+                      onPressed: cred.username.isEmpty
+                          ? null
+                          : () => _copy(cred.username, "Usuario copiado"),
+                    ),
+                  ],
+                ),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildField(
+                        "Contraseña",
+                        _passwordVisible
+                            ? cred.password
+                            : "••••••••••",
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        _passwordVisible
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                      ),
+                      color: AppColors.primaryClaro,
+                      onPressed: () {
+                        setState(() {
+                          _passwordVisible = !_passwordVisible;
+                        });
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.copy),
+                      color: AppColors.primaryClaro,
+                      onPressed: () =>
+                          _copy(cred.password, "Contraseña copiada"),
+                    ),
+                  ],
+                ),
+                
+                if (cred.notes.isNotEmpty)
+                  _buildField("Notas", cred.notes),
+              ],
+            ),
           ),
-
-        ],
-      ),
-
-      floatingActionButton: FloatingActionButton(
-          onPressed: _editCredential,
-          elevation: 6,
-          backgroundColor: AppColors.resalta,
-          foregroundColor: AppColors.primary,
-          child: const Icon(Icons.edit),
-        ),
-
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-
-            Center(
-              child: CircleAvatar(
-                radius: 36,
-                backgroundColor: Colors.grey.shade200,
-                child: ClipOval(
-                  child: Image.network(
-                    'https://www.google.com/s2/favicons?domain=${cred.application}.com&sz=128',
-                    width: 48,
-                    height: 48,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) {
-                      return Text(
-                        cred.application.isNotEmpty
-                          ? cred.application.substring(0, 1).toUpperCase()
-                          : '?',
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              )
-            ),
-
-            const SizedBox(height: 30),
-
-            _buildField("Aplicación", cred.application),
-
-            Row(
-              children: [
-
-                Expanded(
-                  child: _buildField("Usuario", cred.username),
-                ),
-
-                IconButton(
-                  icon: const Icon(Icons.copy),
-                  color: AppColors.primaryClaro,
-                  onPressed: cred.username.isEmpty
-                      ? null
-                      : () => _copy(
-                            cred.username,
-                            "Usuario copiado",
-                          ),
-                ),
-
-              ],
-            ),
-
-            Row(
-              children: [
-
-                Expanded(
-                  child: _buildField(
-                    "Contraseña",
-                    _passwordVisible
-                        ? cred.password
-                        : "••••••••••",
-                  ),
-                ),
-
-                IconButton(
-                  icon: Icon(
-                    _passwordVisible
-                        ? Icons.visibility_off
-                        : Icons.visibility,
-                  ),
-                  color: AppColors.primaryClaro,
-                  onPressed: () {
-                    setState(() {
-                      _passwordVisible = !_passwordVisible;
-                    });
-                  },
-                ),
-
-                IconButton(
-                  icon: const Icon(Icons.copy),
-                  color: AppColors.primaryClaro,
-                  onPressed: () => _copy(
-                    cred.password,
-                    "Contraseña copiada",
-                  ),
-                ),
-
-              ],
-            ),
-
-            if (cred.notes.isNotEmpty)
-              _buildField("Notas", cred.notes),
-
-          ],
-        ),
-      ),
-    );
+        );
+    //   },
+    // );
   }
 }

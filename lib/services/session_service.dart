@@ -11,25 +11,24 @@ import 'storage_service.dart';
 class SessionService extends ChangeNotifier {
   final CryptoService _cryptoService;
   final StorageService _storageService;
-
-  final FlutterSecureStorage _secureStorage =
-      const FlutterSecureStorage();
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
   String? _pin;
   Vault _currentVault = Vault.empty();
-
   Timer? _inactivityTimer;
-  //bool _isLoggedIn = false;
-  //DateTime? _lastActivity;
+  bool _isLocked = false;
 
-  //bool _isLocked = false;
+  bool get isLocked => _isLocked;
 
-  //bool get isLocked => _isLocked;
-
-  static const Duration _timeoutDuration =
-      Duration(minutes: 10); // Cambiar en producción
-
+  static const Duration _timeoutDuration = Duration(minutes: 10); // Cambiar en producción
   static const String _pinKey = 'vault_pin';
+
+  bool _isAuthenticating = false;
+  bool get isAuthenticating => _isAuthenticating;
+
+  void setAuthenticating(bool value) {
+    _isAuthenticating = value;
+  }
 
   SessionService(
     this._cryptoService,
@@ -39,7 +38,6 @@ class SessionService extends ChangeNotifier {
   // ==========================
   // GETTERS
   // ==========================
-
   bool get isLoggedIn => _pin != null;
 
   Vault get currentVault {
@@ -56,24 +54,21 @@ class SessionService extends ChangeNotifier {
   // ==========================
   // LOGIN
   // ==========================
-
   Future<void> loginWithBiometric() async {
+    print("🔐 loginWithBiometric START");
     final savedPin = await _secureStorage.read(key: _pinKey);
-
     if (savedPin == null) {
-      throw Exception('No hay PIN guardado para biometría');
+      throw Exception('No hay PIN guardado');
     }
-
     await _unlockExistingVault(savedPin);
-
-    //_isLocked = false;
-
+    _isLocked = false; // ✅ DESBLOQUEA
+    notifyListeners();
     _startInactivityTimer();
+    print("🔐 loginWithBiometric END");
   }
 
   Future<void> login(String pin) async {
     final exists = await _storageService.exists();
-
     if (!exists) {
       await _createNewVault(pin);
     } else {
@@ -82,43 +77,30 @@ class SessionService extends ChangeNotifier {
 
     // Guardamos PIN en almacenamiento seguro para biometría
     await _secureStorage.write(key: _pinKey, value: pin);
-
-    //_isLocked = false;
+    _isLocked = false;
     notifyListeners();
-
     _startInactivityTimer();
-
   }
 
   Future<void> _createNewVault(String pin) async {
     final emptyVault = Vault.empty();
     final jsonString = jsonEncode(emptyVault.toMap());
-    final encrypted =
-        _cryptoService.encryptData(jsonString, pin);
-
+    final encrypted = _cryptoService.encryptData(jsonString, pin);
     await _storageService.saveEncryptedData(encrypted);
-
     _pin = pin;
     _currentVault = emptyVault;
   }
 
   Future<void> _unlockExistingVault(String pin) async {
-    final encryptedData =
-        await _storageService.readEncryptedData();
-
+    final encryptedData = await _storageService.readEncryptedData();
     if (encryptedData == null || encryptedData.isEmpty) {
       throw Exception('Archivo de datos inválido');
     }
 
     try {
-      final decrypted =
-          _cryptoService.decryptData(encryptedData, pin);
-
-      final Map<String, dynamic> map =
-          jsonDecode(decrypted);
-
+      final decrypted = _cryptoService.decryptData(encryptedData, pin);
+      final Map<String, dynamic> map = jsonDecode(decrypted);
       final vault = Vault.fromMap(map);
-
       _pin = pin;
       _currentVault = vault;
     } catch (_) {
@@ -129,7 +111,6 @@ class SessionService extends ChangeNotifier {
   // ==========================
   // BIOMETRÍA
   // ==========================
-
   Future<String?> getSavedPin() async {
     return await _secureStorage.read(key: _pinKey);
   }
@@ -137,18 +118,14 @@ class SessionService extends ChangeNotifier {
   // ==========================
   // GUARDADO
   // ==========================
-
   Future<void> saveVault(Vault vault) async {
     if (!isLoggedIn || _pin == null) {
       throw Exception('No hay sesión activa');
     }
 
     final jsonString = jsonEncode(vault.toMap());
-    final encrypted =
-        _cryptoService.encryptData(jsonString, _pin!);
-
+    final encrypted = _cryptoService.encryptData(jsonString, _pin!);
     await _storageService.saveEncryptedData(encrypted);
-
     _currentVault = vault;
     notifyListeners();
     _resetInactivityTimer();
@@ -157,11 +134,9 @@ class SessionService extends ChangeNotifier {
   // ==========================
   // TIMEOUT
   // ==========================
-
   void _startInactivityTimer() {
     _inactivityTimer?.cancel();
-    _inactivityTimer =
-        Timer(_timeoutDuration, logout);
+    _inactivityTimer = Timer(_timeoutDuration, logout);
   }
 
   void _resetInactivityTimer() {
@@ -176,30 +151,37 @@ class SessionService extends ChangeNotifier {
 
   void lock() {
     print("SESSION BLOQUEADA (lock)");
-
     _inactivityTimer?.cancel();
     _inactivityTimer = null;
-
-    // ESTO ES LO IMPORTANTE
-    _pin = null;
-
+    _isLocked = true;
     notifyListeners();
   }
+
   // ==========================
   // LOGOUT
   // ==========================
-
   void logout() {
     print("SESSION LOGOUT");
-
     _inactivityTimer?.cancel();
     _inactivityTimer = null;
-
     _pin = null;
+    _isLocked = false;
     _currentVault = Vault.empty();
-
     notifyListeners(); // FALTABA
   }
 
+  // método para desbloquear
+  void unlock() {
+    _isLocked = false;
+    notifyListeners();
+    _startInactivityTimer();
+  }
 
+  // método para desbloquear con PIN existente (para biometría)
+  Future<void> unlockWithPin(String pin) async {
+    await _unlockExistingVault(pin);
+    _isLocked = false;
+    notifyListeners();
+    _startInactivityTimer();
+  }
 }

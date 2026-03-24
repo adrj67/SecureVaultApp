@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:secure_vault/screens/pin_screen.dart';
+//import 'package:secure_vault/screens/pin_screen.dart';
 import 'package:secure_vault/services/session_service.dart';
 import 'package:secure_vault/utils/constants.dart';
 import 'dart:math';
@@ -24,8 +24,7 @@ class AddEditScreen extends StatefulWidget {
   State<AddEditScreen> createState() => _AddEditScreenState();
 }
 
-class _AddEditScreenState extends State<AddEditScreen> 
-  with WidgetsBindingObserver {
+class _AddEditScreenState extends State<AddEditScreen> {
 
   final _formKey = GlobalKey<FormState>();
 
@@ -43,7 +42,6 @@ class _AddEditScreenState extends State<AddEditScreen>
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
 
     if (isEditing) {
       final c = widget.credential!;
@@ -57,7 +55,6 @@ class _AddEditScreenState extends State<AddEditScreen>
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
     _applicationController.dispose();
     _usernameController.dispose();
     _passwordController.dispose();
@@ -66,18 +63,18 @@ class _AddEditScreenState extends State<AddEditScreen>
   }
 
 
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
+  // @override
+  // void didChangeAppLifecycleState(AppLifecycleState state) {
 
-    if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.inactive) {
+  //   if (state == AppLifecycleState.paused ||
+  //       state == AppLifecycleState.inactive) {
 
-      // 👇 Si está abierta esta pantalla, cerrarla
-      if (mounted && Navigator.canPop(context)) {
-        Navigator.pop(context);
-      }
-    }
-  }
+  //     // 👇 Si está abierta esta pantalla, cerrarla
+  //     if (mounted && Navigator.canPop(context)) {
+  //       Navigator.pop(context);
+  //     }
+  //   }
+  // }
   
 
   /// Generador de claves
@@ -114,6 +111,8 @@ class _AddEditScreenState extends State<AddEditScreen>
     final username = _usernameController.text.trim();
     final password = _passwordController.text.trim();
     final notes = _notesController.text.trim();
+
+    widget.sessionService.registerUserActivity();
 
     if (application.isEmpty || password.isEmpty) {
       setState(() {

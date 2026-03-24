@@ -5,7 +5,6 @@ import 'package:secure_vault/utils/constants.dart';
 import '../services/session_service.dart';
 import '../repositories/credential_repository.dart';
 import '../models/credential.dart';
-import 'pin_screen.dart';
 import 'add_edit_screen.dart';
 import 'detail_screen.dart';
 
@@ -25,8 +24,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen>
-    with WidgetsBindingObserver {
+class _HomeScreenState extends State<HomeScreen> {
 
   final TextEditingController _searchController = TextEditingController();
 
@@ -41,8 +39,6 @@ class _HomeScreenState extends State<HomeScreen>
   void initState() {
     super.initState();
 
-    WidgetsBinding.instance.addObserver(this);
-
     _credentialRepository =
         CredentialRepository(widget.sessionService);
 
@@ -53,7 +49,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
+    
     _searchController.dispose();
     super.dispose();
   }
@@ -61,7 +57,7 @@ class _HomeScreenState extends State<HomeScreen>
   // ==========================
   // CICLO DE VIDA APP
   // ==========================
-
+  /*
  @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
 
@@ -82,7 +78,7 @@ class _HomeScreenState extends State<HomeScreen>
 
       }
     }
-  }
+  } */
   
   // ==========================
   // CARGAR CREDENCIALES

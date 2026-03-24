@@ -10,7 +10,7 @@ import 'screens/pin_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-
+  
   final cryptoService = CryptoService();
   final storageService = StorageService();
 
@@ -37,37 +37,86 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
   @override
   void initState() {
     super.initState();
 
-    // Observa cambios de estado de la app
     WidgetsBinding.instance.addObserver(this);
+
+    widget.sessionService.addListener(_onSessionChanged); // 1
   }
 
   @override
   void dispose() {
-
     WidgetsBinding.instance.removeObserver(this);
-
+    widget.sessionService.removeListener(_onSessionChanged); // 2
     super.dispose();
+  }
+
+  void _onSessionChanged() {
+    final session = widget.sessionService;
+
+    if (navigatorKey.currentState == null) return;
+
+    // 🔒 BLOQUEA durante biometría
+    if (session.isAuthenticating) {
+      print("⛔ BLOQUEADO: autenticando...");
+      return;
+    }
+
+    print("👉 NAVIGATION TRIGGER - isLocked: ${session.isLocked}, isLoggedIn: ${session.isLoggedIn}");
+
+    if (session.isLocked) {
+      print("➡️ NAVIGATE TO PIN (Bloqueado)");
+
+      navigatorKey.currentState!.pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (_) => PinScreen(sessionService: session),
+        ),
+        (route) => false,
+      );
+    }
+    // Caso 2 No esta logueado (logout completo)
+     else if (!session.isLoggedIn) {
+      print("➡️ NAVIGATE TO HOME (no logueado)");
+
+      navigatorKey.currentState!.pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (_) => HomeScreen(sessionService: session),
+        ),
+        (route) => false,
+      );
+    }
+    // Caso 3: sesion activa y desbloqueada
+    else {
+      // Solo navegar a Home si no estamos ya en una pantalla valida
+      final currentRoute = navigatorKey.currentState!.context.widget.toString();
+      if(!currentRoute.contains('HomeScreen')) {
+        print("Navegate To Home");
+        navigatorKey.currentState!.pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (_) => HomeScreen(sessionService: session),
+          ),
+          (route) => false,
+        );
+      }
+    }
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-
+    // Cuando la app pasa a segundo plano o se inactiva
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive) {
-
-      // 🔐 Bloquear sesión
+      print("App en segundo plano - Bloqueando");
       widget.sessionService.lock();
     }
-
+    // Cuando la app vuelve a primer plano
     if (state == AppLifecycleState.resumed) {
-
-      // 🔄 Forzar reconstrucción
-      //setState(() {});
+      print ("App vuelve a primer plano");
+      // El listener de session manejara la navegacion si esta bloqueada
     }
   }
 
@@ -84,6 +133,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         builder: (context, _) {
 
           return MaterialApp(
+            navigatorKey: navigatorKey,
             title: 'Secure Vault',
             debugShowCheckedModeBanner: false,
 
@@ -94,17 +144,28 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               useMaterial3: true,
             ),
 
-            // 🔥 AQUÍ ESTÁ LA MAGIA
-            home: widget.sessionService.isLoggedIn
-                ? HomeScreen(
-                    sessionService: widget.sessionService,
-                  )
-                : PinScreen(
-                    sessionService: widget.sessionService,
-                  ),
+            home: _buildRootScreen(),
           );
         },
       ),
     );
+  }
+
+  Widget _buildRootScreen() {
+
+    final session = widget.sessionService;
+
+    // 🔐 Prioridad: sesión bloqueada
+    if (session.isLocked) {
+      return PinScreen(sessionService: session);
+    }
+
+    // 🔑 Usuario logueado
+    if (session.isLoggedIn) {
+      return HomeScreen(sessionService: session);
+    }
+
+    // 🚪 No logueado
+    return PinScreen(sessionService: session);
   }
 }
