@@ -1,7 +1,6 @@
 import 'package:uuid/uuid.dart';
 
 import '../models/credential.dart';
-//import '../models/vault.dart';
 import '../services/session_service.dart';
 
 class CredentialRepository {

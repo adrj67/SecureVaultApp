@@ -45,13 +45,13 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
     WidgetsBinding.instance.addObserver(this);
 
-    widget.sessionService.addListener(_onSessionChanged); // 1
+    widget.sessionService.addListener(_onSessionChanged);
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    widget.sessionService.removeListener(_onSessionChanged); // 2
+    widget.sessionService.removeListener(_onSessionChanged);
     super.dispose();
   }
 

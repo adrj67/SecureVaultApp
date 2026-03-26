@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-//import 'package:flutter/services.dart';
 import 'package:secure_vault/utils/constants.dart';
 
 import '../services/session_service.dart';
@@ -9,8 +8,6 @@ import 'add_edit_screen.dart';
 import 'detail_screen.dart';
 
 import '../widgets/credential_tile.dart';
-//import '../widgets/confirm_dialog.dart';
-//import '../utils/constants.dart';
 
 class HomeScreen extends StatefulWidget {
   final SessionService sessionService;
@@ -53,32 +50,6 @@ class _HomeScreenState extends State<HomeScreen> {
     _searchController.dispose();
     super.dispose();
   }
-
-  // ==========================
-  // CICLO DE VIDA APP
-  // ==========================
-  /*
- @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-
-    if (state == AppLifecycleState.resumed) {
-
-      if (!widget.sessionService.isLoggedIn) {
-
-        if (!mounted) return;
-
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(
-            builder: (_) => PinScreen(
-              sessionService: widget.sessionService,
-            ),
-          ),
-          (route) => false,
-        );
-
-      }
-    }
-  } */
   
   // ==========================
   // CARGAR CREDENCIALES
@@ -122,22 +93,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ==========================
-  // COPIAR CONTRASEÑA
-  // ==========================
-/*
-  Future<void> _copyPassword(String password) async {
-    await Clipboard.setData(ClipboardData(text: password));
-
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Contraseña copiada'),
-      ),
-    );
-  }
-*/
-  // ==========================
   // MOSTRAR / OCULTAR
   // ==========================
 
@@ -167,28 +122,6 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadCredentials();
   }
 
-  // ==========================
-  // ABRIR DETAIL SCREEN
-  // ==========================
-/*
-  Future<void> _openDetailScreen() async {
-
-    final cred = _filteredCredentials[index];
-
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => DetailScreen(
-          credential: cred,
-          repository: _credentialRepository,
-        ),
-      ),
-    );
-
-    _loadCredentials();
-  }
-  */
-  
   // ==========================
   // BORRAR CREDENTIAL
   // ==========================
@@ -236,7 +169,7 @@ class _HomeScreenState extends State<HomeScreen> {
         widget.sessionService.registerUserActivity();
       },
       child: Scaffold(
-        backgroundColor: AppColors.primary, //const Color(0xFFF4F6F8),
+        backgroundColor: AppColors.primary,
         appBar: AppBar(
           title: const Text('Listado de Apps'),
           centerTitle: true,
@@ -334,11 +267,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           onTogglePassword: () => _togglePassword(cred.id),
 
                           onEdit: () async {
-                            //widget.sessionService.registerUserActivity();
-                            await Navigator.push(
+                            final result = await Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => DetailScreen ( // builder: (_) => AddEditScreen(
+                                builder: (_) => DetailScreen (
                                   credential: cred,
                                   repository: _credentialRepository,
                                   sessionService: widget.sessionService,

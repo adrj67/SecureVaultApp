@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:secure_vault/services/session_service.dart';
 import 'package:secure_vault/utils/constants.dart';
 
 import '../models/credential.dart';
 import '../repositories/credential_repository.dart';
 import 'add_edit_screen.dart';
-//import '../services/session_service.dart';
 
 class DetailScreen extends StatefulWidget {
   final Credential credential;
@@ -25,8 +25,11 @@ class DetailScreen extends StatefulWidget {
 }
 
 class _DetailScreenState extends State<DetailScreen> {
-
   bool _passwordVisible = false;
+
+  String _formatDate(DateTime date) {
+    return DateFormat('dd/MM/yyyy HH:mm').format(date);
+  }
 
   Future<void> _copy(String text, String message) async {
     await Clipboard.setData(ClipboardData(text: text));
@@ -68,12 +71,12 @@ class _DetailScreenState extends State<DetailScreen> {
 
     if (!mounted) return;
 
-    Navigator.pop(context);
+    //Navigator.pop(context, true);
+    Navigator.of(context).pushNamedAndRemoveUntil('/HomeScreen', (Route<dynamic> route) => false);
   }
 
   Future<void> _editCredential() async {
-    //widget.sessionService.registerUserActivity();
-    await Navigator.push(
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => AddEditScreen(
@@ -86,10 +89,12 @@ class _DetailScreenState extends State<DetailScreen> {
 
     if (!mounted) return;
 
-    Navigator.pop(context);
+    if (result == true && Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    };
   }
 
-  Widget _buildField(String label, String value) {
+  Widget _buildField(String label, String value, {bool isMultiline = false}) {
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -107,10 +112,37 @@ class _DetailScreenState extends State<DetailScreen> {
 
         Text(
           value.isEmpty ? '-' : value,
-          style: const TextStyle(fontSize: 16),
+          style: TextStyle(
+            fontSize: 16,
+            height: isMultiline ? 1.4 : 1.0,
+          ),
         ),
 
         const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  Widget _buildDateField(String label, DateTime date) {
+    return Column (
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.grey,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          _formatDate(date),
+          style:  const TextStyle(
+            fontSize: 14,
+            color: Colors.grey,
+          ),
+        ),
+        const SizedBox(height: 16,)
       ],
     );
   }
@@ -145,7 +177,7 @@ class _DetailScreenState extends State<DetailScreen> {
             child: const Icon(Icons.edit),
           ),
 
-          body: Padding(
+          body: SingleChildScrollView (
             padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -228,12 +260,15 @@ class _DetailScreenState extends State<DetailScreen> {
                 ),
                 
                 if (cred.notes.isNotEmpty)
-                  _buildField("Notas", cred.notes),
+                  _buildField("Notas", cred.notes, isMultiline: true),
+                
+                const Divider(height: 32, thickness: 1,),
+
+                _buildDateField("Fecha de Creacion", cred.createdAt),
+                _buildDateField("Ultima Modificacion", cred.updatedAt),
               ],
             ),
           ),
         );
-    //   },
-    // );
   }
 }

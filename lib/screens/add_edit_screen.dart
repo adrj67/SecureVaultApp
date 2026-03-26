@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-//import 'package:secure_vault/screens/pin_screen.dart';
 import 'package:secure_vault/services/session_service.dart';
 import 'package:secure_vault/utils/constants.dart';
 import 'dart:math';
@@ -62,21 +61,6 @@ class _AddEditScreenState extends State<AddEditScreen> {
     super.dispose();
   }
 
-
-  // @override
-  // void didChangeAppLifecycleState(AppLifecycleState state) {
-
-  //   if (state == AppLifecycleState.paused ||
-  //       state == AppLifecycleState.inactive) {
-
-  //     // 👇 Si está abierta esta pantalla, cerrarla
-  //     if (mounted && Navigator.canPop(context)) {
-  //       Navigator.pop(context);
-  //     }
-  //   }
-  // }
-  
-
   /// Generador de claves
   void _generatePassword() {
     const chars =
@@ -132,6 +116,7 @@ class _AddEditScreenState extends State<AddEditScreen> {
           username: username,
           password: password,
           notes: notes,
+          updatedAt: DateTime.now(),
         );
 
         await widget.repository.updateCredential(updated);
@@ -149,7 +134,9 @@ class _AddEditScreenState extends State<AddEditScreen> {
       // 🔥 CLAVE: validar estado antes de navegar
       if (!mounted || !widget.sessionService.isLoggedIn) return;
 
-      Navigator.of(context).maybePop(); // 👈 evita crash
+      //Navigator.of(context).maybePop(); // 👈 evita crash
+      //Navigator.of(context).pop(true);
+      Navigator.of(context).pushNamedAndRemoveUntil('/HomeScreen', (Route<dynamic> route) => false);
 
     } catch (e) {
 

@@ -167,7 +167,7 @@ class SessionService extends ChangeNotifier {
     _pin = null;
     _isLocked = false;
     _currentVault = Vault.empty();
-    notifyListeners(); // FALTABA
+    notifyListeners();
   }
 
   // método para desbloquear
