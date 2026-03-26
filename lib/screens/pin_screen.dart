@@ -21,7 +21,7 @@ class _PinScreenState extends State<PinScreen> {
   bool _isLoading = false;
   String? _error;
   bool _isAuthenticating = false;
-
+  
   @override
   void dispose() {
     // Cancelar cualquier autenticación en curso al salir
@@ -105,9 +105,9 @@ class _PinScreenState extends State<PinScreen> {
   }
 
   Future<void> _handleLogin() async {
-    if (_pin.length != 4) {
+    if (_pin.length != 6) {
       setState(() {
-        _error = 'Ingrese un PIN válido';
+        _error = 'Ingrese un PIN de 6 dígitos';
       });
       return;
     }
@@ -118,7 +118,12 @@ class _PinScreenState extends State<PinScreen> {
     });
 
     try {
-      if (widget.sessionService.isLocked) {
+      final vaultExists = await widget.sessionService.vaultExists();
+
+      if (!vaultExists) {
+        print("Primer inicio - Creando vault con PIN");
+        await widget.sessionService.login(_pin);
+      } else if (widget.sessionService.isLocked) {
         print("🔓 Desbloqueando app con PIN");
         await widget.sessionService.unlockWithPin(_pin);
         print("✅ App desbloqueada correctamente");
@@ -154,7 +159,7 @@ class _PinScreenState extends State<PinScreen> {
   Widget _buildPinIndicator() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(4, (index) {
+      children: List.generate(6, (index) {
         final filled = index < _pin.length;
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 8),
@@ -170,13 +175,13 @@ class _PinScreenState extends State<PinScreen> {
   }
 
   void _onNumberPressed(String number) {
-    if (_pin.length >= 4) return;
+    if (_pin.length >= 6) return;
     setState(() {
       _pin += number;
       _error = null;
     });
 
-    if (_pin.length == 4) {
+    if (_pin.length == 6) {
       _handleLogin();
     }
   }
@@ -270,7 +275,7 @@ class _PinScreenState extends State<PinScreen> {
   @override
   Widget build(BuildContext context) {
     final isUnlockMode = widget.sessionService.isLocked;
-    final titleText = isUnlockMode ? 'Desbloquear Vault' : 'Secure Vault';
+    final titleText = isUnlockMode ? 'Desbloquear' : 'Secure Vault';
     
     return Scaffold(
       backgroundColor: AppColors.pinEmpty,
@@ -338,7 +343,8 @@ class _PinScreenState extends State<PinScreen> {
                 ],
               ),
       ),
-    );
+     );
+
   }
   
   Future<bool> _hasSavedPin() async {
