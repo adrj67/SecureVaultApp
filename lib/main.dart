@@ -55,6 +55,131 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     super.dispose();
   }
 
+void _onSessionChanged() {
+  final session = widget.sessionService;
+  
+  if (navigatorKey.currentState == null) return;
+
+  // No navegar durante autenticación biométrica
+  if (session.isAuthenticating) {
+    print("⛔ BLOQUEADO: autenticando...");
+    return;
+  }
+
+  print("👉 NAVIGATION TRIGGER - isLocked: ${session.isLocked}, isLoggedIn: ${session.isLoggedIn}, isLockedOut: ${session.isLockedOut}");
+
+  // Si está bloqueado por intentos, NUNCA navegar a Home
+  if (session.isLockedOut) {
+    print("➡️ NAVIGATE TO PIN (bloqueado por intentos)");
+    navigatorKey.currentState!.pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (_) => PinScreen(sessionService: session),
+      ),
+      (route) => false,
+    );
+    return; // Salir para no continuar con otras condiciones
+  }
+  
+  // Caso 1: Está bloqueado (app minimizada o timeout)
+  if (session.isLocked) {
+    print("➡️ NAVIGATE TO PIN (bloqueado)");
+    navigatorKey.currentState!.pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (_) => PinScreen(sessionService: session),
+      ),
+      (route) => false,
+    );
+    return; // Salir
+  } 
+  
+  // Caso 2: No está logueado (logout completo)
+  if (!session.isLoggedIn) {
+    print("➡️ NAVIGATE TO PIN (no logueado)");
+    navigatorKey.currentState!.pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (_) => PinScreen(sessionService: session),
+      ),
+      (route) => false,
+    );
+    return; // Salir
+  } 
+  
+  // Caso 3: Sesión activa y desbloqueada
+  // Solo navegar a Home si no estamos ya en una pantalla válida
+  final currentRoute = navigatorKey.currentState!.context.widget.toString();
+  if (!currentRoute.contains('HomeScreen')) {
+    print("➡️ NAVIGATE TO HOME");
+    navigatorKey.currentState!.pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (_) => HomeScreen(sessionService: session),
+      ),
+      (route) => false,
+    );
+  }
+}
+
+/*
+  void _onSessionChanged() {
+    final session = widget.sessionService;
+    
+    if (navigatorKey.currentState == null) return;
+
+    // No navegar durante autenticación biométrica
+    if (session.isAuthenticating) {
+      print("⛔ BLOQUEADO: autenticando...");
+      return;
+    }
+
+    print("👉 NAVIGATION TRIGGER - isLocked: ${session.isLocked}, isLoggedIn: ${session.isLoggedIn}, isLockedOut: ${session.isLockedOut}");
+
+    // 🔥 NUEVO: Si está bloqueado por intentos, debe ir a PIN con mensaje
+    if (session.isLockedOut) {
+      print("➡️ NAVIGATE TO PIN (bloqueado por intentos)");
+      navigatorKey.currentState!.pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (_) => PinScreen(sessionService: session),
+        ),
+        (route) => false,
+      );
+    }
+    // Caso 1: Está bloqueado (app minimizada o timeout)
+    else if (session.isLocked) {
+      print("➡️ NAVIGATE TO PIN (bloqueado)");
+      navigatorKey.currentState!.pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (_) => PinScreen(sessionService: session),
+        ),
+        (route) => false,
+      );
+    } 
+    // Caso 2: No está logueado (logout completo)
+    else if (!session.isLoggedIn) {
+      print("➡️ NAVIGATE TO PIN (no logueado)");
+      navigatorKey.currentState!.pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (_) => PinScreen(sessionService: session),
+        ),
+        (route) => false,
+      );
+    } 
+    // Caso 3: Sesión activa y desbloqueada
+    else {
+      // Solo navegar a Home si no estamos ya en una pantalla válida
+      final currentRoute = navigatorKey.currentState!.context.widget.toString();
+      if (!currentRoute.contains('HomeScreen')) {
+        print("➡️ NAVIGATE TO HOME");
+        navigatorKey.currentState!.pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (_) => HomeScreen(sessionService: session),
+          ),
+          (route) => false,
+        );
+      }
+    }
+  }
+*/
+
+/*
   void _onSessionChanged() {
     final session = widget.sessionService;
 
@@ -104,6 +229,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       }
     }
   }
+*/
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {

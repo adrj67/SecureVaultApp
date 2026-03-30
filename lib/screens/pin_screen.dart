@@ -3,6 +3,8 @@ import 'package:secure_vault/utils/constants.dart';
 import '../services/session_service.dart';
 import '../services/biometric_service.dart';
 
+import 'dart:async';
+
 class PinScreen extends StatefulWidget {
   final SessionService sessionService;
 
@@ -21,12 +23,43 @@ class _PinScreenState extends State<PinScreen> {
   bool _isLoading = false;
   String? _error;
   bool _isAuthenticating = false;
+
+  Timer? _lockoutTimer; // Timer para actualizar contador
+
+  @override
+  void initState() {
+    super.initState();
+    widget.sessionService.addListener(_onSessionChanged);
+
+     /// Si la app se abre en estado de bloqueo, mostrar mensaje
+    if (widget.sessionService.isLockedOut) {
+      _showLockoutMessage();
+    }
+  }
   
   @override
   void dispose() {
+    widget.sessionService.removeListener(_onSessionChanged);
+    _lockoutTimer?.cancel();
     // Cancelar cualquier autenticación en curso al salir
     _biometricService.cancel();
     super.dispose();
+  }
+
+  void _onSessionChanged() {
+    if (!mounted) return;
+    
+    // Si el bloqueo terminó, actualizar UI
+    if (!widget.sessionService.isLockedOut) {
+      _lockoutTimer?.cancel();
+      setState(() {
+        _error = null;
+      });
+    }
+    /// Si se activa el bloqueo mientras está en PIN, mostrar mensaje
+    if (widget.sessionService.isLockedOut) {
+      _showLockoutMessage();
+    }
   }
 
   Future<void> _handleBiometricLogin() async {
@@ -112,6 +145,15 @@ class _PinScreenState extends State<PinScreen> {
       return;
     }
 
+    // Verificar si ya está bloqueado ANTES de intentar
+    if (widget.sessionService.isLockedOut) {
+      _showLockoutMessage();
+      setState(() {
+        _pin = '';
+      });
+      return;
+    }
+
     setState(() {
       _isLoading = true;
       _error = null;
@@ -119,33 +161,53 @@ class _PinScreenState extends State<PinScreen> {
 
     try {
       final vaultExists = await widget.sessionService.vaultExists();
-
+      
       if (!vaultExists) {
-        print("Primer inicio - Creando vault con PIN");
+        print("🔐 Primer inicio - Creando vault con PIN");
         await widget.sessionService.login(_pin);
       } else if (widget.sessionService.isLocked) {
         print("🔓 Desbloqueando app con PIN");
         await widget.sessionService.unlockWithPin(_pin);
-        print("✅ App desbloqueada correctamente");
       } else {
         print("🔐 Login completo con PIN");
         await widget.sessionService.login(_pin);
-        print("✅ Login completo correcto");
       }
+      print("✅ Operación exitosa");
+      
+      // Limpiar cualquier timer de bloqueo
+      _lockoutTimer?.cancel();
+      
     } catch (e) {
-      print("❌ Error en login/desbloqueo: $e");
+      print("❌ Error: $e");
+      final errorMsg = e.toString();
+      
       if (mounted) {
-        setState(() {
-          _error = 'PIN incorrecto';
-        });
+        // Verificar si es un bloqueo activado
+        if (errorMsg.contains('BLOQUEO_ACTIVADO') || widget.sessionService.isLockedOut) {
+          _showLockoutMessage();
+          /// Limpiar PIN y deshabilitar entrada
+          setState(() {
+            _pin = '';
+          });
+        } else if (errorMsg.contains('Espere')) {
+          // Extraer el tiempo del mensaje
+          _error = errorMsg.replaceFirst('Exception: ', '');
+          _startLockoutTimer();
+        } else {
+          setState(() {
+            _error = 'PIN incorrecto';
+          });
+        }
       }
 
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      if (mounted) {
-        setState(() {
-          _pin = '';
-        });
+      // Limpiar el PIN después de error (solo si no es bloqueo)
+      if (!widget.sessionService.isLockedOut) {
+        await Future.delayed(const Duration(milliseconds: 500));
+        if (mounted) {
+          setState(() {
+            _pin = '';
+          });
+        }
       }
     } finally {
       if (mounted) {
@@ -155,6 +217,123 @@ class _PinScreenState extends State<PinScreen> {
       }
     }
   }
+
+  /// Método para mostrar mensaje de bloqueo
+  void _showLockoutMessage() {
+    _startLockoutTimer();
+    // Forzar actualización del estado de bloqueo
+    if (mounted) {
+      final seconds = widget.sessionService.lockoutRemainingSeconds;
+      final minutes = seconds ~/ 60;
+      final secs = seconds % 60;
+      setState(() {
+        _error = '🔒 DEMASIADOS INTENTOS\nLa app se desbloqueará en ${minutes}m ${secs}s';
+      });
+    }
+  }
+
+/*
+  /// Método para mostrar mensaje de bloqueo
+  void _showLockoutMessage() {
+    _startLockoutTimer();
+    // Forzar actualización del estado de bloqueo
+    if (mounted) {
+      setState(() {
+        _error = 'Demasiados intentos fallidos';
+      });
+    }
+  }
+*/
+
+  // Metodo para actualizar el contador de bloqueo
+  void _startLockoutTimer() {
+    _lockoutTimer?.cancel();
+    
+    // Actualizar inmediatamente
+    _updateLockoutMessage();
+    
+    // Luego cada segundo
+    _lockoutTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      
+      if (!widget.sessionService.isLockedOut) {
+        timer.cancel();
+        if (mounted) {
+          setState(() {
+            _error = null;
+          });
+        }
+        return;
+      }
+      
+      _updateLockoutMessage();
+    });
+  }
+
+  /*
+  void _startLockoutTimer() {
+    _lockoutTimer?.cancel();
+    _lockoutTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted || !widget.sessionService.isLockedOut) {
+        timer.cancel();
+        if (mounted) {
+          setState(() {
+            if (_error?.contains('Espere') == true) {
+              _error = null;
+            }
+          });
+        }
+        return;
+      }
+      // Actualizar el mensaje con el tiempo restante
+      if (mounted) {
+        final seconds = widget.sessionService.lockoutRemainingSeconds;
+        final minutes = seconds ~/ 60;
+        final secs = seconds % 60;
+        setState(() {
+          _error = 'Demasiados intentos. Espere ${minutes}m ${secs}s';
+        });
+      }
+    });
+  }
+  */
+
+  // pin_screen.dart - Mejorar _updateLockoutMessage
+
+  /// Actualizar el mensaje con el tiempo restante
+  void _updateLockoutMessage() {
+    if (!mounted) return;
+    
+    final seconds = widget.sessionService.lockoutRemainingSeconds;
+    if (seconds <= 0) return;
+    
+    final minutes = seconds ~/ 60;
+    final secs = seconds % 60;
+    
+    setState(() {
+      _error = '🔒 DEMASIADOS INTENTOS\nLa app se desbloqueará en ${minutes}m ${secs}s';
+    });
+  }
+
+/*
+  /// Actualizar el mensaje con el tiempo restante
+  void _updateLockoutMessage() {
+    if (!mounted) return;
+    
+    final seconds = widget.sessionService.lockoutRemainingSeconds;
+    if (seconds <= 0) return;
+    
+    final minutes = seconds ~/ 60;
+    final secs = seconds % 60;
+    
+    setState(() {
+      _error = '🔒 Demasiados intentos\nEspere ${minutes}m ${secs}s para volver a intentar';
+    });
+  }
+*/
 
   Widget _buildPinIndicator() {
     return Row(
@@ -231,47 +410,155 @@ class _PinScreenState extends State<PinScreen> {
   }
 
   Widget _buildKeyboard() {
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            _buildKey('1'),
-            _buildKey('2'),
-            _buildKey('3'),
+    final isDisabled = widget.sessionService.isLockedOut;
+  
+    return Opacity(
+      opacity: isDisabled ? 0.3 : 1.0,
+      child: IgnorePointer(
+        ignoring: isDisabled,
+          child: Column(
+            children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildKey('1'),
+                _buildKey('2'),
+                _buildKey('3'),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildKey('4'),
+                _buildKey('5'),
+                _buildKey('6'),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildKey('7'),
+                _buildKey('8'),
+                _buildKey('9'),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                const SizedBox(width: 70),
+                _buildKey('0'),
+                _buildDeleteKey(),
+              ],
+            ),
           ],
         ),
-        const SizedBox(height: 16),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            _buildKey('4'),
-            _buildKey('5'),
-            _buildKey('6'),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            _buildKey('7'),
-            _buildKey('8'),
-            _buildKey('9'),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            const SizedBox(width: 70),
-            _buildKey('0'),
-            _buildDeleteKey(),
-          ],
-        ),
-      ],
+      ),
     );
   }
 
+  @override
+  Widget build(BuildContext context) {
+    final isUnlockMode = widget.sessionService.isLocked;
+    final titleText = isUnlockMode ? 'Desbloquear' : 'Secure Vault';
+    
+    return Scaffold(
+      backgroundColor: AppColors.pinEmpty,
+      body: SafeArea(
+        child: _isLoading
+            ? const Center(
+                child: CircularProgressIndicator(),
+              )
+            : SingleChildScrollView(  // 👈 NUEVO: Envolver en SingleChildScrollView
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: MediaQuery.of(context).size.height - 
+                              MediaQuery.of(context).padding.top - 
+                              MediaQuery.of(context).padding.bottom,
+                  ),
+                  child: IntrinsicHeight(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Spacer(flex: 1),
+                        Icon(
+                          isUnlockMode ? Icons.lock_outline : Icons.lock_open_outlined,
+                          size: 72,
+                          color: AppColors.primary,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          titleText,
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Ingrese su PIN',
+                          style: TextStyle(
+                            color: AppColors.primaryShade,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        _buildPinIndicator(),
+                        if (_error != null) ...[
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.red.shade50,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              _error!,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: Colors.red,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 40),
+                        _buildKeyboard(),
+                        const SizedBox(height: 30),
+                        FutureBuilder<bool>(
+                          future: _hasSavedPin(),
+                          builder: (context, snapshot) {
+                            if (snapshot.hasData && snapshot.data == true) {
+                              return TextButton.icon(
+                                onPressed: (widget.sessionService.isLockedOut || _isAuthenticating) 
+                                    ? null 
+                                    : _handleBiometricLogin,
+                                icon: _isAuthenticating
+                                    ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                      )
+                                    : const Icon(Icons.fingerprint),
+                                label: const Text('Usar Biometría'),
+                              );
+                            }
+                            return const SizedBox.shrink();
+                          },
+                        ),
+                        const Spacer(flex: 1),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+      ),
+    );
+  }
+
+/*
   @override
   Widget build(BuildContext context) {
     final isUnlockMode = widget.sessionService.isLocked;
@@ -325,7 +612,9 @@ class _PinScreenState extends State<PinScreen> {
                     builder: (context, snapshot) {
                       if (snapshot.hasData && snapshot.data == true) {
                         return TextButton.icon(
-                          onPressed: _isAuthenticating ? null : _handleBiometricLogin,
+                          onPressed: (widget.sessionService.isLockedOut || _isAuthenticating) 
+                              ? null 
+                              : _handleBiometricLogin,
                           icon: _isAuthenticating
                               ? const SizedBox(
                                   width: 20,
@@ -346,7 +635,8 @@ class _PinScreenState extends State<PinScreen> {
      );
 
   }
-  
+  */
+
   Future<bool> _hasSavedPin() async {
     final pin = await widget.sessionService.getSavedPin();
     return pin != null;

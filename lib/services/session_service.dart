@@ -8,6 +8,7 @@ import '../models/vault.dart';
 import 'crypto_service.dart';
 import 'storage_service.dart';
 
+
 class SessionService extends ChangeNotifier {
   final CryptoService _cryptoService;
   final StorageService _storageService;
@@ -17,11 +18,30 @@ class SessionService extends ChangeNotifier {
   Vault _currentVault = Vault.empty();
   Timer? _inactivityTimer;
   bool _isLocked = false;
+  
+  // 👇 NUEVO: Variables para rate limiting
+  int _failedAttempts = 0;
+  DateTime? _lockoutUntil;
+  Timer? _lockoutTimer;
 
   bool get isLocked => _isLocked;
+  
+  // 👇 NUEVO: Getter para saber si está bloqueado por intentos
+  bool get isLockedOut => _lockoutUntil != null && DateTime.now().isBefore(_lockoutUntil!);
+  
+  // 👇 NUEVO: Getter para tiempo restante de bloqueo (en segundos)
+  int get lockoutRemainingSeconds {
+    if (_lockoutUntil == null) return 0;
+    final remaining = _lockoutUntil!.difference(DateTime.now());
+    return remaining.isNegative ? 0 : remaining.inSeconds;
+  }
 
-  static const Duration _timeoutDuration = Duration(minutes: 10); // Cambiar en producción
+  static const Duration _timeoutDuration = Duration(minutes: 10);
   static const String _pinKey = 'vault_pin';
+  
+  // 👇 NUEVO: Configuración de rate limiting
+  static const int _maxFailedAttempts = 2; // cambiar en produccion
+  static const Duration _lockoutDuration = Duration(minutes: 2); // cambiar en produccion
 
   bool _isAuthenticating = false;
   bool get isAuthenticating => _isAuthenticating;
@@ -52,22 +72,82 @@ class SessionService extends ChangeNotifier {
   }
 
   // ==========================
-  // LOGIN
+  // RATE LIMITING METHODS
   // ==========================
+  
+  /// Verificar si está bloqueado y lanzar excepción
+  void _checkLockout() {
+    if (isLockedOut) {
+      final remaining = _lockoutUntil!.difference(DateTime.now());
+      final seconds = remaining.inSeconds;
+      final minutes = seconds ~/ 60;
+      final secs = seconds % 60;
+      throw Exception('Demasiados intentos. Espere ${minutes}m ${secs}s');
+    }
+  }
+  
+  /// Resetear el contador de intentos fallidos
+  void _resetFailedAttempts() {
+    _failedAttempts = 0;
+    _lockoutUntil = null;
+    _lockoutTimer?.cancel();
+    _lockoutTimer = null;
+    notifyListeners(); // Para actualizar UI si está mostrando bloqueo
+  }
+  
+  /// Registrar intento fallido y posiblemente bloquear
+  void _registerFailedAttempt() {
+    _failedAttempts++;
+    
+    print("⚠️ Intento fallido $_failedAttempts/$_maxFailedAttempts");
+    
+    if (_failedAttempts >= _maxFailedAttempts) {
+      // Bloquear por _lockoutDuration
+      _lockoutUntil = DateTime.now().add(_lockoutDuration);
+      _failedAttempts = 0;
+      
+      print("🔒 BLOQUEO ACTIVADO por $_lockoutDuration minutos");
+      
+      // Notificar para actualizar UI
+      notifyListeners();
+      
+      // Iniciar timer para desbloquear automáticamente
+      _lockoutTimer?.cancel();
+      _lockoutTimer = Timer(_lockoutDuration, () {
+        _lockoutUntil = null;
+        print("🔓 Bloqueo por intentos expirado");
+        notifyListeners();
+      });
+    }
+  }
+
+  // ==========================
+  // LOGIN CON RATE LIMITING
+  // ==========================
+  
   Future<void> loginWithBiometric() async {
     print("🔐 loginWithBiometric START");
+    
+    // Verificar bloqueo antes de intentar
+    if (isLockedOut) {
+      throw Exception('App bloqueada temporalmente por seguridad');
+    }
+    
     final savedPin = await _secureStorage.read(key: _pinKey);
     if (savedPin == null) {
       throw Exception('No hay PIN guardado');
     }
     await _unlockExistingVault(savedPin);
-    _isLocked = false; // ✅ DESBLOQUEA
+    _isLocked = false;
     notifyListeners();
     _startInactivityTimer();
     print("🔐 loginWithBiometric END");
   }
 
   Future<void> login(String pin) async {
+    // Verificar bloqueo antes de intentar
+    _checkLockout();
+    
     final exists = await _storageService.exists();
     if (!exists) {
       await _createNewVault(pin);
@@ -75,8 +155,17 @@ class SessionService extends ChangeNotifier {
       await _unlockExistingVault(pin);
     }
 
-    // Guardamos PIN en almacenamiento seguro para biometría
     await _secureStorage.write(key: _pinKey, value: pin);
+    _isLocked = false;
+    notifyListeners();
+    _startInactivityTimer();
+  }
+
+  Future<void> unlockWithPin(String pin) async {
+    // Verificar bloqueo antes de intentar
+    _checkLockout();
+    
+    await _unlockExistingVault(pin);
     _isLocked = false;
     notifyListeners();
     _startInactivityTimer();
@@ -89,6 +178,9 @@ class SessionService extends ChangeNotifier {
     await _storageService.saveEncryptedData(encrypted);
     _pin = pin;
     _currentVault = emptyVault;
+    
+    // Resetear contador de intentos al crear nuevo vault
+    _resetFailedAttempts();
   }
 
   Future<void> _unlockExistingVault(String pin) async {
@@ -103,10 +195,24 @@ class SessionService extends ChangeNotifier {
       final vault = Vault.fromMap(map);
       _pin = pin;
       _currentVault = vault;
+      
+      // ✅ ÉXITO: Resetear contador de intentos
+      _resetFailedAttempts();
+      
     } catch (_) {
-      throw Exception('PIN incorrecto');
+      // ❌ FALLO: Registrar intento fallido
+      final wasLockedOut = isLockedOut;
+      _registerFailedAttempt();
+      
+      // Si después de registrar el fallo ahora estamos bloqueados
+      if (!wasLockedOut && isLockedOut) {
+        throw Exception('BLOQUEO_ACTIVADO');
+      } else {
+        throw Exception('PIN incorrecto');
+      }
     }
   }
+
 
   // ==========================
   // BIOMETRÍA
@@ -150,38 +256,33 @@ class SessionService extends ChangeNotifier {
   }
 
   void lock() {
-    print("SESSION BLOQUEADA (lock)");
+    print("🔒 SESSION LOCKED");
     _inactivityTimer?.cancel();
     _inactivityTimer = null;
     _isLocked = true;
     notifyListeners();
   }
-
-  // ==========================
-  // LOGOUT
-  // ==========================
-  void logout() {
-    print("SESSION LOGOUT");
-    _inactivityTimer?.cancel();
-    _inactivityTimer = null;
-    _pin = null;
-    _isLocked = false;
-    _currentVault = Vault.empty();
-    notifyListeners();
-  }
-
-  // método para desbloquear
+  
   void unlock() {
     _isLocked = false;
     notifyListeners();
     _startInactivityTimer();
   }
 
-  // método para desbloquear con PIN existente (para biometría)
-  Future<void> unlockWithPin(String pin) async {
-    await _unlockExistingVault(pin);
+  // ==========================
+  // LOGOUT
+  // ==========================
+  void logout() {
+    print("🚪 SESSION LOGOUT COMPLETO");
+    _inactivityTimer?.cancel();
+    _inactivityTimer = null;
+    _pin = null;
     _isLocked = false;
+    _currentVault = Vault.empty();
+    
+    // Resetear rate limiting al hacer logout completo
+    _resetFailedAttempts();
+    
     notifyListeners();
-    _startInactivityTimer();
   }
 }
