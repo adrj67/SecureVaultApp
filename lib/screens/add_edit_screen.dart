@@ -62,8 +62,47 @@ class _AddEditScreenState extends State<AddEditScreen> {
     super.dispose();
   }
 
-  /// Generador de claves
-  void _generatePassword() {
+  // Generador de contraseñas con confirmacion
+  Future<void> _generatePassword() async {
+    // Si no hay contraseña actual o esta vacia, generar sin preguntar
+    if (_passwordController.text.isEmpty) {
+      _generateNewPassword();
+      return;
+    }
+
+    // Si hay contraseña existente, preguntar confirmacion
+    final confirm = await showDialog<bool>(
+      context: context, 
+      builder: (_) {
+        return AlertDialog(
+          title: const Text('Generar nueva contraseña'),
+          content: const Text(
+            '¿Estas Seguro? Esto reemplazara la contraseña actual.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false), 
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true), 
+              child: const Text(
+                'Generar',
+                style: TextStyle(color: Colors.orange),
+              )
+            )
+          ],
+        );
+      }
+    );
+
+    if (confirm == true) {
+      _generateNewPassword();
+    }
+  }
+
+  /// Generador de claves aleatorias
+  void _generateNewPassword(){
     const chars =
         'abcdefghijklmnñopqrstuvwxyzABCDEFGHIJKLMNÑOPQRSTUVWXYZ0123456789!@#\$%^&*()_+';
 
