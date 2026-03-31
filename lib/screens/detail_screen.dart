@@ -26,6 +26,22 @@ class DetailScreen extends StatefulWidget {
 
 class _DetailScreenState extends State<DetailScreen> {
   bool _passwordVisible = false;
+  Credential? _currentCredential; // almacenar localmente
+
+  @override
+  void initState() {
+    super.initState();
+    _currentCredential = widget.credential;
+  }
+
+  Future<void> _refreshCredential() async {
+    final updated = await widget.repository.getById(widget.credential.id);
+    if (updated != null && mounted) {
+      setState(() {
+        _currentCredential = updated;
+      });
+    }
+  }
 
   String _formatDate(DateTime date) {
     return DateFormat('dd/MM/yyyy HH:mm').format(date);
@@ -71,8 +87,9 @@ class _DetailScreenState extends State<DetailScreen> {
 
     if (!mounted) return;
 
-    //Navigator.pop(context, true);
-    Navigator.of(context).pushNamedAndRemoveUntil('/HomeScreen', (Route<dynamic> route) => false);
+    // devolver true para indicar que se elimino
+    Navigator.of(context).maybePop(true);
+    //Navigator.of(context).pushNamedAndRemoveUntil('/HomeScreen', (Route<dynamic> route) => false);
   }
 
   Future<void> _editCredential() async {
@@ -82,16 +99,22 @@ class _DetailScreenState extends State<DetailScreen> {
         builder: (_) => AddEditScreen(
           repository: widget.repository,
           sessionService: widget.sessionService,
-          credential: widget.credential,
+          //credential: widget.credential,
+          credential: _currentCredential ?? widget.credential,
         ),
       ),
     );
 
     if (!mounted) return;
 
-    if (result == true && Navigator.of(context).canPop()) {
-      Navigator.of(context).pop();
-    };
+    // Si se edito correctamente, actualizar la pantalla de detalle
+    if (result == true) {
+      await _refreshCredential();
+    }
+
+    // if (result == true && Navigator.of(context).canPop()) {
+    //   Navigator.of(context).pop();
+    // };
   }
 
   Widget _buildField(String label, String value, {bool isMultiline = false}) {
@@ -150,7 +173,7 @@ class _DetailScreenState extends State<DetailScreen> {
   @override
   Widget build(BuildContext context) {
 
-        final cred = widget.credential;
+        final cred = _currentCredential ?? widget.credential;
 
         return Scaffold(
           appBar: AppBar(

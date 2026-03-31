@@ -19,17 +19,17 @@ class SessionService extends ChangeNotifier {
   Timer? _inactivityTimer;
   bool _isLocked = false;
   
-  // 👇 NUEVO: Variables para rate limiting
+  // Variables para rate limiting
   int _failedAttempts = 0;
   DateTime? _lockoutUntil;
   Timer? _lockoutTimer;
 
   bool get isLocked => _isLocked;
   
-  // 👇 NUEVO: Getter para saber si está bloqueado por intentos
+  // Getter para saber si está bloqueado por intentos
   bool get isLockedOut => _lockoutUntil != null && DateTime.now().isBefore(_lockoutUntil!);
   
-  // 👇 NUEVO: Getter para tiempo restante de bloqueo (en segundos)
+  // Getter para tiempo restante de bloqueo (en segundos)
   int get lockoutRemainingSeconds {
     if (_lockoutUntil == null) return 0;
     final remaining = _lockoutUntil!.difference(DateTime.now());
@@ -39,7 +39,7 @@ class SessionService extends ChangeNotifier {
   static const Duration _timeoutDuration = Duration(minutes: 10);
   static const String _pinKey = 'vault_pin';
   
-  // 👇 NUEVO: Configuración de rate limiting
+  // Configuración de rate limiting
   static const int _maxFailedAttempts = 2; // cambiar en produccion
   static const Duration _lockoutDuration = Duration(minutes: 2); // cambiar en produccion
 
@@ -99,14 +99,14 @@ class SessionService extends ChangeNotifier {
   void _registerFailedAttempt() {
     _failedAttempts++;
     
-    print("⚠️ Intento fallido $_failedAttempts/$_maxFailedAttempts");
+    //print("⚠️ Intento fallido $_failedAttempts/$_maxFailedAttempts");
     
     if (_failedAttempts >= _maxFailedAttempts) {
       // Bloquear por _lockoutDuration
       _lockoutUntil = DateTime.now().add(_lockoutDuration);
       _failedAttempts = 0;
       
-      print("🔒 BLOQUEO ACTIVADO por $_lockoutDuration minutos");
+      //print("🔒 BLOQUEO ACTIVADO por $_lockoutDuration minutos");
       
       // Notificar para actualizar UI
       notifyListeners();
@@ -115,7 +115,7 @@ class SessionService extends ChangeNotifier {
       _lockoutTimer?.cancel();
       _lockoutTimer = Timer(_lockoutDuration, () {
         _lockoutUntil = null;
-        print("🔓 Bloqueo por intentos expirado");
+        //print("🔓 Bloqueo por intentos expirado");
         notifyListeners();
       });
     }
@@ -124,9 +124,8 @@ class SessionService extends ChangeNotifier {
   // ==========================
   // LOGIN CON RATE LIMITING
   // ==========================
-  
   Future<void> loginWithBiometric() async {
-    print("🔐 loginWithBiometric START");
+    // print("🔐 loginWithBiometric START");
     
     // Verificar bloqueo antes de intentar
     if (isLockedOut) {
@@ -141,7 +140,7 @@ class SessionService extends ChangeNotifier {
     _isLocked = false;
     notifyListeners();
     _startInactivityTimer();
-    print("🔐 loginWithBiometric END");
+    // print("🔐 loginWithBiometric END");
   }
 
   Future<void> login(String pin) async {
@@ -196,7 +195,7 @@ class SessionService extends ChangeNotifier {
       _pin = pin;
       _currentVault = vault;
       
-      // ✅ ÉXITO: Resetear contador de intentos
+      // Resetear contador de intentos
       _resetFailedAttempts();
       
     } catch (_) {
@@ -256,7 +255,7 @@ class SessionService extends ChangeNotifier {
   }
 
   void lock() {
-    print("🔒 SESSION LOCKED");
+    // print("🔒 SESSION LOCKED");
     _inactivityTimer?.cancel();
     _inactivityTimer = null;
     _isLocked = true;
@@ -273,7 +272,7 @@ class SessionService extends ChangeNotifier {
   // LOGOUT
   // ==========================
   void logout() {
-    print("🚪 SESSION LOGOUT COMPLETO");
+    // print("🚪 SESSION LOGOUT COMPLETO");
     _inactivityTimer?.cancel();
     _inactivityTimer = null;
     _pin = null;

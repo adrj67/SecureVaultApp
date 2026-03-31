@@ -94,4 +94,15 @@ class CredentialRepository {
 
     await _sessionService.saveVault(updatedVault);
   }
+
+  /// Obtener credencial por ID
+  Credential? getById(String id) {
+    final credentials = getAll();
+    try {
+      return credentials.firstWhere((c) => c.id == id);
+    } catch (_) {
+      return null;
+    }
+  }
+
 }

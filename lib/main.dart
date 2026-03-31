@@ -62,15 +62,15 @@ void _onSessionChanged() {
 
   // No navegar durante autenticación biométrica
   if (session.isAuthenticating) {
-    print("⛔ BLOQUEADO: autenticando...");
+    // print("⛔ BLOQUEADO: autenticando...");
     return;
   }
 
-  print("👉 NAVIGATION TRIGGER - isLocked: ${session.isLocked}, isLoggedIn: ${session.isLoggedIn}, isLockedOut: ${session.isLockedOut}");
+  // print("👉 NAVIGATION TRIGGER - isLocked: ${session.isLocked}, isLoggedIn: ${session.isLoggedIn}, isLockedOut: ${session.isLockedOut}");
 
   // Si está bloqueado por intentos, NUNCA navegar a Home
   if (session.isLockedOut) {
-    print("➡️ NAVIGATE TO PIN (bloqueado por intentos)");
+    // print("➡️ NAVIGATE TO PIN (bloqueado por intentos)");
     navigatorKey.currentState!.pushAndRemoveUntil(
       MaterialPageRoute(
         builder: (_) => PinScreen(sessionService: session),
@@ -82,7 +82,7 @@ void _onSessionChanged() {
   
   // Caso 1: Está bloqueado (app minimizada o timeout)
   if (session.isLocked) {
-    print("➡️ NAVIGATE TO PIN (bloqueado)");
+    // print("➡️ NAVIGATE TO PIN (bloqueado)");
     navigatorKey.currentState!.pushAndRemoveUntil(
       MaterialPageRoute(
         builder: (_) => PinScreen(sessionService: session),
@@ -94,7 +94,7 @@ void _onSessionChanged() {
   
   // Caso 2: No está logueado (logout completo)
   if (!session.isLoggedIn) {
-    print("➡️ NAVIGATE TO PIN (no logueado)");
+    // print("➡️ NAVIGATE TO PIN (no logueado)");
     navigatorKey.currentState!.pushAndRemoveUntil(
       MaterialPageRoute(
         builder: (_) => PinScreen(sessionService: session),
@@ -108,7 +108,7 @@ void _onSessionChanged() {
   // Solo navegar a Home si no estamos ya en una pantalla válida
   final currentRoute = navigatorKey.currentState!.context.widget.toString();
   if (!currentRoute.contains('HomeScreen')) {
-    print("➡️ NAVIGATE TO HOME");
+    // print("➡️ NAVIGATE TO HOME");
     navigatorKey.currentState!.pushAndRemoveUntil(
       MaterialPageRoute(
         builder: (_) => HomeScreen(sessionService: session),
@@ -118,130 +118,17 @@ void _onSessionChanged() {
   }
 }
 
-/*
-  void _onSessionChanged() {
-    final session = widget.sessionService;
-    
-    if (navigatorKey.currentState == null) return;
-
-    // No navegar durante autenticación biométrica
-    if (session.isAuthenticating) {
-      print("⛔ BLOQUEADO: autenticando...");
-      return;
-    }
-
-    print("👉 NAVIGATION TRIGGER - isLocked: ${session.isLocked}, isLoggedIn: ${session.isLoggedIn}, isLockedOut: ${session.isLockedOut}");
-
-    // 🔥 NUEVO: Si está bloqueado por intentos, debe ir a PIN con mensaje
-    if (session.isLockedOut) {
-      print("➡️ NAVIGATE TO PIN (bloqueado por intentos)");
-      navigatorKey.currentState!.pushAndRemoveUntil(
-        MaterialPageRoute(
-          builder: (_) => PinScreen(sessionService: session),
-        ),
-        (route) => false,
-      );
-    }
-    // Caso 1: Está bloqueado (app minimizada o timeout)
-    else if (session.isLocked) {
-      print("➡️ NAVIGATE TO PIN (bloqueado)");
-      navigatorKey.currentState!.pushAndRemoveUntil(
-        MaterialPageRoute(
-          builder: (_) => PinScreen(sessionService: session),
-        ),
-        (route) => false,
-      );
-    } 
-    // Caso 2: No está logueado (logout completo)
-    else if (!session.isLoggedIn) {
-      print("➡️ NAVIGATE TO PIN (no logueado)");
-      navigatorKey.currentState!.pushAndRemoveUntil(
-        MaterialPageRoute(
-          builder: (_) => PinScreen(sessionService: session),
-        ),
-        (route) => false,
-      );
-    } 
-    // Caso 3: Sesión activa y desbloqueada
-    else {
-      // Solo navegar a Home si no estamos ya en una pantalla válida
-      final currentRoute = navigatorKey.currentState!.context.widget.toString();
-      if (!currentRoute.contains('HomeScreen')) {
-        print("➡️ NAVIGATE TO HOME");
-        navigatorKey.currentState!.pushAndRemoveUntil(
-          MaterialPageRoute(
-            builder: (_) => HomeScreen(sessionService: session),
-          ),
-          (route) => false,
-        );
-      }
-    }
-  }
-*/
-
-/*
-  void _onSessionChanged() {
-    final session = widget.sessionService;
-
-    if (navigatorKey.currentState == null) return;
-
-    // 🔒 BLOQUEA durante biometría
-    if (session.isAuthenticating) {
-      print("⛔ BLOQUEADO: autenticando...");
-      return;
-    }
-
-    print("👉 NAVIGATION TRIGGER - isLocked: ${session.isLocked}, isLoggedIn: ${session.isLoggedIn}");
-
-    if (session.isLocked) {
-      print("➡️ NAVIGATE TO PIN (Bloqueado)");
-
-      navigatorKey.currentState!.pushAndRemoveUntil(
-        MaterialPageRoute(
-          builder: (_) => PinScreen(sessionService: session),
-        ),
-        (route) => false,
-      );
-    }
-    // Caso 2 No esta logueado (logout completo)
-     else if (!session.isLoggedIn) {
-      print("➡️ NAVIGATE TO HOME (no logueado)");
-
-      navigatorKey.currentState!.pushAndRemoveUntil(
-        MaterialPageRoute(
-          builder: (_) => HomeScreen(sessionService: session),
-        ),
-        (route) => false,
-      );
-    }
-    // Caso 3: sesion activa y desbloqueada
-    else {
-      // Solo navegar a Home si no estamos ya en una pantalla valida
-      final currentRoute = navigatorKey.currentState!.context.widget.toString();
-      if(!currentRoute.contains('HomeScreen')) {
-        print("Navegate To Home");
-        navigatorKey.currentState!.pushAndRemoveUntil(
-          MaterialPageRoute(
-            builder: (_) => HomeScreen(sessionService: session),
-          ),
-          (route) => false,
-        );
-      }
-    }
-  }
-*/
-
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // Cuando la app pasa a segundo plano o se inactiva
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive) {
-      print("App en segundo plano - Bloqueando");
+      // print("App en segundo plano - Bloqueando");
       widget.sessionService.lock();
     }
     // Cuando la app vuelve a primer plano
     if (state == AppLifecycleState.resumed) {
-      print ("App vuelve a primer plano");
+      // print ("App vuelve a primer plano");
       // El listener de session manejara la navegacion si esta bloqueada
     }
   }

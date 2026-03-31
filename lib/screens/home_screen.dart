@@ -54,7 +54,6 @@ class _HomeScreenState extends State<HomeScreen> {
   // ==========================
   // CARGAR CREDENCIALES
   // ==========================
-
   Future <void> _loadCredentials() async {
     try{
       final list = await _credentialRepository.getAll();
@@ -74,13 +73,11 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch(e) {
 
     }
-
   }
 
   // ==========================
   // BUSCADOR
   // ==========================
-
   void _filterCredentials() {
     final query = _searchController.text.toLowerCase();
 
@@ -95,7 +92,6 @@ class _HomeScreenState extends State<HomeScreen> {
   // ==========================
   // MOSTRAR / OCULTAR
   // ==========================
-
   void _togglePassword(String id) {
     setState(() {
       _visiblePasswords[id] =
@@ -106,10 +102,9 @@ class _HomeScreenState extends State<HomeScreen> {
   // ==========================
   // ABRIR ADD CREDENTIAL
   // ==========================
-
   Future<void> _openAddCredential() async {
     widget.sessionService.registerUserActivity();
-    await Navigator.push(
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => AddEditScreen(
@@ -118,14 +113,14 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
-
-    _loadCredentials();
+    if (result == true) {
+      _loadCredentials();
+    }
   }
 
   // ==========================
   // BORRAR CREDENTIAL
   // ==========================
-
   Future<void> _deleteCredential(Credential credential) async {
 
     final confirm = await showDialog<bool>(
@@ -160,7 +155,6 @@ class _HomeScreenState extends State<HomeScreen> {
   // ==========================
   // UI
   // ==========================
-
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -226,7 +220,13 @@ class _HomeScreenState extends State<HomeScreen> {
             Expanded(
               child: _filteredCredentials.isEmpty
                   ? const Center(
-                      child: Text('No hay credenciales'),
+                      child: Text(
+                        'No hay credenciales',
+                        style: TextStyle(
+                          color:Colors.white,
+                          fontSize: 20,
+                          ),
+                        ),
                     )
                   : ListView.builder(
                       padding: const EdgeInsets.only(bottom: 80),
@@ -277,8 +277,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               ),
                             );
-
-                            _loadCredentials();
+                            if (result == true) {
+                              _loadCredentials();
+                            }
                           },
                           ),
                         );

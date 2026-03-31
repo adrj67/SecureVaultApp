@@ -13,7 +13,7 @@ class BiometricService {
   Future<bool> authenticate() async {
     // Prevenir autenticaciones concurrentes
     if (_isAuthenticating) {
-      print("⚠️ Autenticación ya en progreso, ignorando nueva solicitud");
+      // print("⚠️ Autenticación ya en progreso, ignorando nueva solicitud");
       return false;
     }
 
@@ -29,7 +29,7 @@ class BiometricService {
       );
       return result;
     } catch (e) {
-      print("ERROR BIOMETRIA: $e");
+      // print("ERROR BIOMETRIA: $e");
       return false;
     } finally {
       _isAuthenticating = false;

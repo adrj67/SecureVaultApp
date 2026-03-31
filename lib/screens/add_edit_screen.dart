@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:secure_vault/screens/home_screen.dart';
 import 'package:secure_vault/services/session_service.dart';
 import 'package:secure_vault/utils/constants.dart';
 import 'dart:math';
@@ -90,7 +91,6 @@ class _AddEditScreenState extends State<AddEditScreen> {
 
   /// Guardar Credencial
   Future<void> _saveCredential() async {
-
     final application = _applicationController.text.trim();
     final username = _usernameController.text.trim();
     final password = _passwordController.text.trim();
@@ -108,9 +108,7 @@ class _AddEditScreenState extends State<AddEditScreen> {
     final isEditing = widget.credential != null;
 
     try {
-
       if (isEditing) {
-
         final updated = widget.credential!.copyWith(
           application: application,
           username: username,
@@ -120,9 +118,7 @@ class _AddEditScreenState extends State<AddEditScreen> {
         );
 
         await widget.repository.updateCredential(updated);
-
       } else {
-
         await widget.repository.addCredential(
           application: application,
           username: username,
@@ -131,20 +127,19 @@ class _AddEditScreenState extends State<AddEditScreen> {
         );
       }
 
-      // 🔥 CLAVE: validar estado antes de navegar
+      // Validar estado antes de navegar
       if (!mounted || !widget.sessionService.isLoggedIn) return;
 
-      //Navigator.of(context).maybePop(); // 👈 evita crash
-      //Navigator.of(context).pop(true);
-      Navigator.of(context).pushNamedAndRemoveUntil('/HomeScreen', (Route<dynamic> route) => false);
-
+      // Devolver true para indicar que se guardó correctamente
+      Navigator.of(context).maybePop(true);
+      
     } catch (e) {
-
-      // 🔥 Si la sesión murió, NO navegues desde acá
+      print("❌ Error en _saveCredential: $e");
+      
       if (!mounted) return;
 
       if (!widget.sessionService.isLoggedIn) {
-        return; // 👈 la app ya se va a redirigir sola al PIN
+        return;
       }
 
       setState(() {
