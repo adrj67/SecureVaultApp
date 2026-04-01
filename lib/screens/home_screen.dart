@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:secure_vault/utils/constants.dart';
 
 import '../services/session_service.dart';
@@ -152,6 +155,45 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadCredentials();
   }
 
+  // =========================
+  // DESLOGUERSE Y SALIR
+  // =========================
+  Future<void> _logoutAndExit() async {
+    /*
+    // Mostrar dialogo de confirmacion
+    final confirm = await showDialog<bool>(
+      context: context, 
+      builder: (_) {
+        return AlertDialog(
+          title: const Text('Cerrar sesion'),
+          content: const Text('¿Seguro que deseas cerrar la aplicacion?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, true), 
+              child: const Text(
+                'Salir',
+                style: TextStyle(color: Colors.red),
+                ),
+            ),
+          ],
+        );
+      }
+    );
+
+    if (confirm != true) return;
+    */
+
+    // 1. Cerrar sesion (limpia clave AES de la memoria)
+    widget.sessionService.logout();
+
+    // 2. Salir de la aplicacion con delay para completar logout
+    await Future.delayed(const Duration(milliseconds: 100));
+
+    // 3. Salir de la app
+    SystemNavigator.pop(); // minimiza la aplicacion
+    // exit(0);
+  }
+
   // ==========================
   // UI
   // ==========================
@@ -165,8 +207,18 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Scaffold(
         backgroundColor: AppColors.primary,
         appBar: AppBar(
-          title: const Text('Listado de Apps'),
+          title: const Text('Listado de Apps', style: TextStyle(color: AppColors.primary),),
           centerTitle: true,
+          actions: [
+              IconButton(
+                icon: const Icon(
+                  Icons.logout,
+                  color: AppColors.primary,
+                  ),
+                onPressed: _logoutAndExit,
+                tooltip: 'Cerrar',
+              ),
+            ],
         ),
 
        floatingActionButton: FloatingActionButton(
