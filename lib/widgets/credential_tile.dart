@@ -53,13 +53,44 @@ class CredentialTile extends StatelessWidget {
           ),
         ),
 
+/*
         title: Text(
-          credential.application,
+          credential.application + ' ' + credential.username,
           style: const TextStyle(
             fontWeight: FontWeight.w600,
           ),
         ),
+*/
 
+        title: Row(
+          children: [
+            // Nombre de la aplicación (con peso, puede expandirse)
+            Expanded(
+              child: Text(
+                credential.application + ' ',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                ),
+                overflow: TextOverflow.fade,//TextOverflow.ellipsis,
+                maxLines: 1, // Limita a una línea
+              ),
+            ),
+            // Username (con color gris, más pequeño, no se expande)
+            if (credential.username.isNotEmpty)
+              Flexible(
+                child: Text(
+                  credential.username,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.right,
+                  maxLines: 1, // Limita a una línea
+                ),
+              ),
+          ],
+        ),
         subtitle: Text(
           passwordVisible
               ? credential.password
