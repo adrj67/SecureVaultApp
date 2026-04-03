@@ -63,11 +63,11 @@ class _PinScreenState extends State<PinScreen> {
   }
 
   Future<void> _handleBiometricLogin() async {
-    // print("👉 BOTON BIOMETRIA PRESIONADO");
+    debugPrint("👉 BOTON BIOMETRIA PRESIONADO");
 
     // Evitar múltiples llamadas
     if (_isAuthenticating) {
-      // print("⚠️ Autenticación ya en curso");
+      debugPrint("⚠️ Autenticación ya en curso");
       return;
     }
 
@@ -100,21 +100,21 @@ class _PinScreenState extends State<PinScreen> {
     }
 
     if (authenticated) {
-      // print("✅ BIOMETRIA OK");
+      debugPrint("✅ BIOMETRIA OK");
       
       try {
         if (widget.sessionService.isLocked) {
           final savedPin = await widget.sessionService.getSavedPin();
           if (savedPin != null) {
             await widget.sessionService.unlockWithPin(savedPin);
-            // print("✅ App desbloqueada con biometría");
+            debugPrint("✅ App desbloqueada con biometría");
           }
         } else {
           await widget.sessionService.loginWithBiometric();
-          // print("✅ Login completo con biometría");
+          debugPrint("✅ Login completo con biometría");
         }
       } catch (e) {
-        // print("❌ Error en biometría: $e");
+        debugPrint("❌ Error en biometría: $e");
         if (mounted) {
           setState(() {
             _error = 'Error al desbloquear';
@@ -122,7 +122,7 @@ class _PinScreenState extends State<PinScreen> {
         }
       }
     } else {
-      // print("❌ BIOMETRIA FALLÓ");
+      debugPrint("❌ BIOMETRIA FALLÓ");
       if (mounted) {
         setState(() {
           _error = 'Autenticación fallida';
@@ -163,22 +163,22 @@ class _PinScreenState extends State<PinScreen> {
       final vaultExists = await widget.sessionService.vaultExists();
       
       if (!vaultExists) {
-        // print("🔐 Primer inicio - Creando vault con PIN");
+        debugPrint("🔐 Primer inicio - Creando vault con PIN");
         await widget.sessionService.login(_pin);
       } else if (widget.sessionService.isLocked) {
-        // print("🔓 Desbloqueando app con PIN");
+        debugPrint("🔓 Desbloqueando app con PIN");
         await widget.sessionService.unlockWithPin(_pin);
       } else {
-        // print("🔐 Login completo con PIN");
+        debugPrint("🔐 Login completo con PIN");
         await widget.sessionService.login(_pin);
       }
-      // print("✅ Operación exitosa");
+      debugPrint("✅ Operación exitosa");
       
       // Limpiar cualquier timer de bloqueo
       _lockoutTimer?.cancel();
       
     } catch (e) {
-      // print("❌ Error: $e");
+      debugPrint("❌ Error: $e");
       final errorMsg = e.toString();
       
       if (mounted) {

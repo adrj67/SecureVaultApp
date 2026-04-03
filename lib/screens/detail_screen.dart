@@ -89,7 +89,6 @@ class _DetailScreenState extends State<DetailScreen> {
 
     // devolver true para indicar que se elimino
     Navigator.of(context).maybePop(true);
-    //Navigator.of(context).pushNamedAndRemoveUntil('/HomeScreen', (Route<dynamic> route) => false);
   }
 
   Future<void> _editCredential() async {
@@ -111,10 +110,6 @@ class _DetailScreenState extends State<DetailScreen> {
     if (result == true) {
       await _refreshCredential();
     }
-
-    // if (result == true && Navigator.of(context).canPop()) {
-    //   Navigator.of(context).pop();
-    // };
   }
 
   Widget _buildField(String label, String value, {bool isMultiline = false}) {

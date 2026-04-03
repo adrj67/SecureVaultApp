@@ -53,21 +53,12 @@ class CredentialTile extends StatelessWidget {
           ),
         ),
 
-/*
-        title: Text(
-          credential.application + ' ' + credential.username,
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-*/
-
         title: Row(
           children: [
             // Nombre de la aplicación (con peso, puede expandirse)
             Expanded(
               child: Text(
-                credential.application + ' ',
+                '${credential.application} ',
                 style: const TextStyle(
                   fontWeight: FontWeight.w600,
                 ),

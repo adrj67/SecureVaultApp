@@ -96,7 +96,7 @@ class CredentialRepository {
   }
 
   /// Obtener credencial por ID
-  Credential? getById(String id) {
+  Future<Credential?> getById(String id) async {
     final credentials = getAll();
     try {
       return credentials.firstWhere((c) => c.id == id);

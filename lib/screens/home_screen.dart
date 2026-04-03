@@ -1,4 +1,4 @@
-import 'dart:io';
+//import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -59,7 +59,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // ==========================
   Future <void> _loadCredentials() async {
     try{
-      final list = await _credentialRepository.getAll();
+      final list = _credentialRepository.getAll();
 
       list.sort(
       (a, b) => a.application.toLowerCase().compareTo(
@@ -74,7 +74,15 @@ class _HomeScreenState extends State<HomeScreen> {
         _filteredCredentials = list;
       });
     } catch(e) {
-
+      debugPrint("X Error al cargar credenciales: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error al cargar las credenciales'),
+            backgroundColor: Colors.red,
+          )
+        );
+      }
     }
   }
 
@@ -159,29 +167,6 @@ class _HomeScreenState extends State<HomeScreen> {
   // DESLOGUERSE Y SALIR
   // =========================
   Future<void> _logoutAndExit() async {
-    /*
-    // Mostrar dialogo de confirmacion
-    final confirm = await showDialog<bool>(
-      context: context, 
-      builder: (_) {
-        return AlertDialog(
-          title: const Text('Cerrar sesion'),
-          content: const Text('¿Seguro que deseas cerrar la aplicacion?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, true), 
-              child: const Text(
-                'Salir',
-                style: TextStyle(color: Colors.red),
-                ),
-            ),
-          ],
-        );
-      }
-    );
-
-    if (confirm != true) return;
-    */
 
     // 1. Cerrar sesion (limpia clave AES de la memoria)
     widget.sessionService.logout();
