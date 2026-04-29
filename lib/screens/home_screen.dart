@@ -241,7 +241,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   fillColor: Colors.white,
 
                   contentPadding: const EdgeInsets.symmetric(
-                    vertical: 14,
+                    vertical: 10,
                   ),
 
                   border: OutlineInputBorder(
@@ -266,7 +266,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                     )
                   : ListView.builder(
-                      padding: const EdgeInsets.only(bottom: 80),
+                      padding: const EdgeInsets.only(bottom: 70),
                       itemCount: _filteredCredentials.length,
                       itemBuilder: (context, index) {
 
