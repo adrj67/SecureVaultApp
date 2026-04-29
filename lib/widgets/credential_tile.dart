@@ -55,8 +55,9 @@ class CredentialTile extends StatelessWidget {
 
         title: Row(
           children: [
-            // Nombre de la aplicación (con peso, puede expandirse)
+            // Nombre de la aplicación ocupa 60% del espacio
             Expanded(
+              flex: 6, // 60%
               child: Text(
                 '${credential.application} ',
                 style: const TextStyle(
@@ -66,9 +67,11 @@ class CredentialTile extends StatelessWidget {
                 maxLines: 1, // Limita a una línea
               ),
             ),
-            // Username (con color gris, más pequeño, no se expande)
+            const SizedBox(width: 8),
+            // Username (con color gris, más pequeño, 40%)
             if (credential.username.isNotEmpty)
               Flexible(
+                flex: 4,
                 child: Text(
                   credential.username,
                   style: const TextStyle(

@@ -1,4 +1,4 @@
-🔐 Secure Vault – Flutter Local Password Manager
+🔐 Santo y Seña – Flutter Local Gestor de contraseñas
 
 Aplicación móvil desarrollada en Flutter que implementa un gestor de contraseñas 100% local con cifrado AES manual y arquitectura limpia.
 

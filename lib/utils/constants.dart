@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class AppConstants {
-  static const appName = 'Secure Vault';
+  static const appName = 'Santo y Seña';
 
   static const copyPasswordMessage =
       'Contraseña copiada al portapapeles';

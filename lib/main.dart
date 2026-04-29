@@ -163,7 +163,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
           return MaterialApp(
             navigatorKey: navigatorKey,
-            title: 'Secure Vault',
+            title: 'Santo y Seña',
             debugShowCheckedModeBanner: false,
 
             theme: ThemeData(

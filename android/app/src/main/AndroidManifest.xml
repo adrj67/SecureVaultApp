@@ -5,7 +5,7 @@
 
     <application
         android:usesCleartextTraffic="true"
-        android:label="secure_vault"
+        android:label="Santo y Seña"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

@@ -402,7 +402,7 @@ class _PinScreenState extends State<PinScreen> {
   @override
   Widget build(BuildContext context) {
     final isUnlockMode = widget.sessionService.isLocked;
-    final titleText = isUnlockMode ? 'Desbloquear' : 'Secure Vault';
+    final titleText = isUnlockMode ? 'Desbloquear' : 'Santo y Seña';
     
     return Scaffold(
       backgroundColor: AppColors.pinEmpty,

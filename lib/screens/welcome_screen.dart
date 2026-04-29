@@ -22,7 +22,7 @@ class WelcomeScreen extends StatelessWidget {
             Icon(Icons.shield, size: 80, color: AppColors.primaryClaro),
             SizedBox(height: 24),
             Text(
-              '¡Bienvenido a\n Secure Vault!',
+              '¡Bienvenido a\n Santo y Seña!',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
@@ -33,7 +33,7 @@ class WelcomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             const Text(
-              'Al hacer click en ➡️ "COMENZAR" deberas ingresar una clave de\n 6️⃣ digitos. \nEse sera tu 🔐 PIN de la app \nSecure Vault.',
+              'Al hacer click en ➡️ "COMENZAR" deberas ingresar una clave de\n 6️⃣ digitos. \nEse sera tu 🔐 PIN de la app \nSanto y Seña.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 14, color: AppColors.primary, fontWeight: FontWeight.bold),
             ),
@@ -72,7 +72,7 @@ class WelcomeScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Recuerda que:\nSecure Vault NO puede recuperar tu PIN.',
+                'Recuerda que:\nSanto y Seña NO puede recuperar tu PIN.',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),

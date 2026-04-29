@@ -22,7 +22,7 @@ class BiometricService {
     
     try {
       final result = await _localAuth.authenticate(
-        localizedReason: 'Autentíquese para acceder a Secure Vault',
+        localizedReason: 'Autentíquese para acceder a Santo y Seña',
         options: const AuthenticationOptions(
           biometricOnly: true,
           stickyAuth: false,
