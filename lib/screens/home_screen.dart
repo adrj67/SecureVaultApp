@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:secure_vault/screens/settings_screen.dart';
 import 'package:secure_vault/utils/constants.dart';
 
 import '../services/session_service.dart';
@@ -179,6 +180,21 @@ class _HomeScreenState extends State<HomeScreen> {
     // exit(0);
   }
 
+  Future<void> _openSettings() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SettingsScreen(
+          sessionService: widget.sessionService,
+          repository: _credentialRepository,
+          onBackupDone: () {
+            _loadCredentials(); // Recargar después de restaurar
+          },
+        ),
+      ),
+    );
+  }
+
   // ==========================
   // UI
   // ==========================
@@ -195,13 +211,20 @@ class _HomeScreenState extends State<HomeScreen> {
           title: const Text('Listado de Apps', style: TextStyle(color: AppColors.primary),),
           centerTitle: true,
           actions: [
+              // Icono de ajustes (configuración - settings)
+              IconButton(
+                icon: const Icon(Icons.settings, color: AppColors.primary),
+                onPressed: _openSettings,
+                tooltip: 'Ajustes',
+              ),
+              // Botón de logout
               IconButton(
                 icon: const Icon(
                   Icons.logout,
                   color: AppColors.primary,
                   ),
                 onPressed: _logoutAndExit,
-                tooltip: 'Cerrar',
+                tooltip: 'Cerrar sesion',
               ),
             ],
         ),
@@ -258,7 +281,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: _filteredCredentials.isEmpty
                   ? const Center(
                       child: Text(
-                        'No hay credenciales',
+                        'No se encuentran aplicaciones',
                         style: TextStyle(
                           color:Colors.white,
                           fontSize: 20,

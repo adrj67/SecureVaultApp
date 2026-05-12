@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -35,6 +36,7 @@ class _DetailScreenState extends State<DetailScreen> {
   }
 
   Future<void> _refreshCredential() async {
+    _passwordVisible = false;
     final updated = await widget.repository.getById(widget.credential.id);
     if (updated != null && mounted) {
       setState(() {
@@ -49,9 +51,7 @@ class _DetailScreenState extends State<DetailScreen> {
 
   Future<void> _copy(String text, String message) async {
     await Clipboard.setData(ClipboardData(text: text));
-
     if (!mounted) return;
-
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
     );
@@ -80,13 +80,9 @@ class _DetailScreenState extends State<DetailScreen> {
         );
       },
     );
-
     if (confirm != true) return;
-
     await widget.repository.deleteCredential(widget.credential.id);
-
     if (!mounted) return;
-
     // devolver true para indicar que se elimino
     Navigator.of(context).maybePop(true);
   }
@@ -98,14 +94,11 @@ class _DetailScreenState extends State<DetailScreen> {
         builder: (_) => AddEditScreen(
           repository: widget.repository,
           sessionService: widget.sessionService,
-          //credential: widget.credential,
           credential: _currentCredential ?? widget.credential,
         ),
       ),
     );
-
     if (!mounted) return;
-
     // Si se edito correctamente, actualizar la pantalla de detalle
     if (result == true) {
       await _refreshCredential();
@@ -125,9 +118,7 @@ class _DetailScreenState extends State<DetailScreen> {
             color: Colors.grey,
           ),
         ),
-
         const SizedBox(height: 4),
-
         Text(
           value.isEmpty ? '-' : value,
           style: TextStyle(
@@ -135,7 +126,6 @@ class _DetailScreenState extends State<DetailScreen> {
             height: isMultiline ? 1.4 : 1.0,
           ),
         ),
-
         const SizedBox(height: 16),
       ],
     );
@@ -167,7 +157,6 @@ class _DetailScreenState extends State<DetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-
         final cred = _currentCredential ?? widget.credential;
 
         return Scaffold(
@@ -205,31 +194,33 @@ class _DetailScreenState extends State<DetailScreen> {
                     radius: 36,
                     backgroundColor: Colors.grey.shade200,
                     child: ClipOval(
-                      child: Image.network(
-                        'https://www.google.com/s2/favicons?domain=${cred.application}.com&sz=128',
-                        width: 48,
-                        height: 48,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) {
-                          return Text(
-                            cred.application.isNotEmpty
-                                ? cred.application.substring(0, 1).toUpperCase()
-                                : '?',
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          );
-                        },
+                      child: CachedNetworkImage(
+                        //'https://www.google.com/s2/favicons?domain=${cred.application}.com&sz=128',
+                        //'https://unavatar.io/${cred.application}.com',
+                        imageUrl: 'https://icons.duckduckgo.com/ip3/${cred.application}.com.ico',
+                        width: 64,
+                        height: 64,
+                        fit: BoxFit.contain,
+                        placeholder: (context, url) => const SizedBox(
+                          width: 40,
+                          height: 40,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        errorWidget: (context, url, error) => Text(
+                          cred.application.isNotEmpty
+                              ? cred.application.substring(0, 1).toUpperCase()
+                              : '?',
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 30),
-
                 _buildField("Aplicación", cred.application),
-
                 Row(
                   children: [
                     Expanded(

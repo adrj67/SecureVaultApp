@@ -284,4 +284,45 @@ class SessionService extends ChangeNotifier {
     
     notifyListeners();
   }
+
+  // ==========================
+  // RESTAURAR VAULT
+  // ==========================
+  Future<bool> restoreVault(String encryptedVault) async {
+    try {
+      // Guardar el vault restaurado
+      debugPrint("💾 Restaurando vault en storage...");
+      await _storageService.saveEncryptedData(encryptedVault);
+      
+      // Si hay sesión activa, recargar el vault en memoria
+      debugPrint("🔄 Recargando vault en memoria...");
+      if (_pin != null) {
+        try {
+          await _unlockExistingVault(_pin!);
+        } catch (e) {
+          debugPrint("⚠️ El PIN no coincide con el backup: $e");
+          // No fallamos la restauración, solo no recargamos en memoria
+        }
+      }
+      
+      notifyListeners();
+      debugPrint("✅ Vault restaurado exitosamente");
+      return true;
+    } catch (e) {
+      debugPrint("❌ Error al restaurar vault: $e");
+      return false;
+    }
+  }
+
+  // ==========================
+  // Obtener el vault encriptado (para backup)
+  // ==========================
+  Future<String?> getEncryptedVault() async {
+    try {
+      return await _storageService.readEncryptedData();
+    } catch (e) {
+      debugPrint("❌ Error al obtener vault encriptado: $e");
+      return null;
+    }
+  }
 }
