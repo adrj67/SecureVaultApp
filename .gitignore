@@ -55,4 +55,5 @@ app.*.map.json
 /android/app/release
 # Android
 android/.gradle/
-android/local.properties
+android/local.properties*.cc
+*.cmake
