@@ -6,32 +6,24 @@ import 'package:secure_vault/utils/constants.dart';
 import 'services/session_service.dart';
 import 'services/crypto_service.dart';
 import 'services/storage_service.dart';
-
 import 'screens/pin_screen.dart';
+
+bool isBackupOperation = false; // Variable global
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   
   final cryptoService = CryptoService();
   final storageService = StorageService();
+  final sessionService = SessionService(cryptoService, storageService);
 
-  final sessionService = SessionService(
-    cryptoService,
-    storageService,
-  );
-
-  runApp(
-    MyApp(sessionService: sessionService),
-  );
+  runApp(MyApp(sessionService: sessionService));
 }
 
 class MyApp extends StatefulWidget {
   final SessionService sessionService;
 
-  const MyApp({
-    super.key,
-    required this.sessionService,
-  });
+  const MyApp({super.key, required this.sessionService});
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -40,20 +32,30 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
+  // Estados de inicialización
   bool _isInitialized = false;
   bool _isFirstTime = false;
+
+  void setBackupOperation(bool value) {
+    isBackupOperation = value;
+  }
 
   @override
   void initState() {
     super.initState();
-
     WidgetsBinding.instance.addObserver(this);
     widget.sessionService.addListener(_onSessionChanged);
-
     _checkFirstTime();
   }
 
-  // Método para verificar primera ejecución
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    widget.sessionService.removeListener(_onSessionChanged);
+    super.dispose();
+  }
+
+  // Verificar si es primera ejecución
   Future<void> _checkFirstTime() async {
     final exists = await widget.sessionService.vaultExists();
     if (mounted) {
@@ -64,13 +66,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     }
   }
 
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    widget.sessionService.removeListener(_onSessionChanged);
-    super.dispose();
-  }
-
+  // Manejador de cambios de sesión
   void _onSessionChanged() {
     final session = widget.sessionService;
     
@@ -78,101 +74,80 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
     // No navegar durante autenticación biométrica
     if (session.isAuthenticating) {
-      debugPrint("⛔ BLOQUEADO: autenticando...");
       return;
     }
 
-    debugPrint("👉 NAVIGATION TRIGGER - isLocked: ${session.isLocked}, isLoggedIn: ${session.isLoggedIn}, isLockedOut: ${session.isLockedOut}");
-
-    // Si está bloqueado por intentos, NUNCA navegar a Home
+    // Bloqueado por intentos fallidos
     if (session.isLockedOut) {
-      debugPrint("➡️ NAVIGATE TO PIN (bloqueado por intentos)");
       navigatorKey.currentState!.pushAndRemoveUntil(
-        MaterialPageRoute(
-          builder: (_) => PinScreen(sessionService: session),
-        ),
+        MaterialPageRoute(builder: (_) => PinScreen(sessionService: session)),
         (route) => false,
       );
-      return; // Salir para no continuar con otras condiciones
+      return;
     }
     
-    // Caso 1: Está bloqueado (app minimizada o timeout)
+    // App bloqueada (minimizada o timeout)
     if (session.isLocked) {
-      debugPrint("➡️ NAVIGATE TO PIN (bloqueado)");
       navigatorKey.currentState!.pushAndRemoveUntil(
-        MaterialPageRoute(
-          builder: (_) => PinScreen(sessionService: session),
-        ),
+        MaterialPageRoute(builder: (_) => PinScreen(sessionService: session)),
         (route) => false,
       );
-      return; // Salir
+      return;
     } 
     
-    // Caso 2: No está logueado (logout completo)
+    // No logueado
     if (!session.isLoggedIn) {
-      debugPrint("➡️ NAVIGATE TO PIN (no logueado)");
       navigatorKey.currentState!.pushAndRemoveUntil(
-        MaterialPageRoute(
-          builder: (_) => PinScreen(sessionService: session),
-        ),
+        MaterialPageRoute(builder: (_) => PinScreen(sessionService: session)),
         (route) => false,
       );
-      return; // Salir
+      return;
     } 
     
-    // Caso 3: Sesión activa y desbloqueada
-    // Solo navegar a Home si no estamos ya en una pantalla válida
+    // Sesión activa - navegar a Home si es necesario
     final currentRoute = navigatorKey.currentState!.context.widget.toString();
     if (!currentRoute.contains('HomeScreen')) {
-      debugPrint("➡️ NAVIGATE TO HOME");
       navigatorKey.currentState!.pushAndRemoveUntil(
-        MaterialPageRoute(
-          builder: (_) => HomeScreen(sessionService: session),
-        ),
+        MaterialPageRoute(builder: (_) => HomeScreen(sessionService: session)),
         (route) => false,
       );
     }
   }
 
+  // Ciclo de vida de la app
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Cuando la app pasa a segundo plano o se inactiva
-    if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.inactive) {
+    // ✅ NO bloquear durante operaciones de backup 
+    if (isBackupOperation) {
+      debugPrint("📂 Backup en curso - ignorando bloqueo");
+      return;
+    }
+    
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
       debugPrint("App en segundo plano - Bloqueando");
       widget.sessionService.lock();
     }
-    // Cuando la app vuelve a primer plano
+    
     if (state == AppLifecycleState.resumed) {
-      debugPrint ("App vuelve a primer plano");
-      // El listener de session manejara la navegacion si esta bloqueada
+      debugPrint("App vuelve a primer plano");
     }
   }
 
   @override
   Widget build(BuildContext context) {
-
     return Listener(
-      onPointerDown: (_) {
-        widget.sessionService.registerUserActivity();
-      },
-
+      onPointerDown: (_) => widget.sessionService.registerUserActivity(),
       child: AnimatedBuilder(
         animation: widget.sessionService,
         builder: (context, _) {
-
           return MaterialApp(
             navigatorKey: navigatorKey,
             title: 'Santo y Seña',
             debugShowCheckedModeBanner: false,
-
             theme: ThemeData(
-              colorScheme: ColorScheme.fromSeed(
-                seedColor: AppColors.primary,
-              ),
+              colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primary),
               useMaterial3: true,
             ),
-
             home: _buildRootScreen(),
           );
         },
@@ -181,46 +156,40 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   }
 
   Widget _buildRootScreen() {
-
     // Mostrar loading mientras verificamos
     if (!_isInitialized) {
       return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
+        body: Center(child: CircularProgressIndicator()),
       );
     }
 
-    // Si es la primera vez, muestra WelcomeScreen
-    if (_isFirstTime) { 
+    // Primera vez - WelcomeScreen
+    if (_isFirstTime) {
       return WelcomeScreen(
         onStart: () {
-          setState(() {
-            _isFirstTime = false;
-          });
-          // Navegar a PinScreen para crear el PIN
+          setState(() => _isFirstTime = false);
           navigatorKey.currentState?.pushReplacement(
             MaterialPageRoute(
               builder: (_) => PinScreen(sessionService: widget.sessionService),
             ),
           );
-        }
+        },
       );
     }
 
     final session = widget.sessionService;
 
-    // 🔐 Prioridad: sesión bloqueada
+    // Prioridad: sesión bloqueada
     if (session.isLocked) {
       return PinScreen(sessionService: session);
     }
 
-    // 🔑 Usuario logueado
+    // Usuario logueado
     if (session.isLoggedIn) {
       return HomeScreen(sessionService: session);
     }
 
-    // 🚪 No logueado
+    // No logueado
     return PinScreen(sessionService: session);
   }
 }

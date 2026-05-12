@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../models/credential.dart';
 
@@ -30,25 +31,34 @@ class CredentialTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
       ),
       child: ListTile(
-
         onTap: onEdit,
-
         leading: CircleAvatar(
           radius: 20,
           backgroundColor: Colors.grey.shade100,
           child: ClipRRect(
             borderRadius: BorderRadius.circular(20),
-            child: Image.network(
-              'https://www.google.com/s2/favicons?domain=${credential.application}.com',
-              width: 24,
-              height: 24,
+            child: CachedNetworkImage(
+              //'https://www.google.com/s2/favicons?domain=${credential.application}.com',
+              //'https://unavatar.io/${credential.application}.com',
+              imageUrl: 'https://icons.duckduckgo.com/ip3/${credential.application}.com.ico',
+              width: 28,
+              height: 28,
               fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) {
-                return const Icon(
-                  Icons.lock_outline,
-                  color: Colors.green,
-                );
-              },
+              placeholder: (context, url) => const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              errorWidget: (context, url, error) => Text(
+                credential.application.isNotEmpty
+                    ? credential.application.substring(0, 1).toUpperCase()
+                    : '?',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue,
+                ),
+              ),
             ),
           ),
         ),

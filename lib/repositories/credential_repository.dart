@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/credential.dart';
@@ -11,8 +12,14 @@ class CredentialRepository {
 
   /// Obtener todas las credenciales
   List<Credential> getAll() {
-    final vault = _sessionService.currentVault;
-    return vault.credentials;
+    try {
+      final vault = _sessionService.currentVault;
+      return vault.credentials;
+    } catch (e) {
+      // No hay sesion activa o vault no existe
+      debugPrint("⚠️ No se puede obtener credenciales: $e");
+      return [];
+    }
   }
 
   /// Buscar credenciales
